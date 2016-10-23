@@ -179,12 +179,18 @@ class EnforsBot:
 
         with self.db:
 
-            cur = self.db.cursor()
+            try:
+                cur = self.db.cursor()
             
-            cur.execute("select * from LOCATION_HISTORY "
-                        "order by ROWID desc limit 1")
+                cur.execute("select * from LOCATION_HISTORY "
+                            "order by ROWID desc limit 1")
+            except:
+                return "It seems someone *ahem* has forgotten to create my database."
 
-            (user, location, event, timestamp) = cur.fetchone()
+            try:
+                (user, location, event, timestamp) = cur.fetchone()
+            except TypeError as error:
+                return "I have no information on that."
 
             if event == "arrived":
                 return "%s %s at %s %s." % (user, event, location,
