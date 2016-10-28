@@ -42,15 +42,6 @@ class IRCThread(eb_thread.Thread):
             # Check for messages from IRC.
             sender, msg_type, channel, msg_text = self.bot.get_msg(1)
 
-            if (sender):
-                self.bot.debug_print("-> sender:   " + sender)
-            if (msg_type):
-                self.bot.debug_print("-> msg_type: " + msg_type)
-            if (channel):
-                self.bot.debug_print("-> channel:  " + channel)
-            if (msg_text):
-                self.bot.debug_print("-> msg_text:  " + msg_text)
-            
             if sender or msg_type or channel or msg_text:
                 self.handle_irc_message(sender, msg_type,
                                         channel, msg_text)
