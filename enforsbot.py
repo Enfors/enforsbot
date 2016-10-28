@@ -3,6 +3,7 @@
 
 
 import eb_config, eb_thread, eb_queue, eb_message, eb_twitter, eb_telegram
+import eb_irc
 import time, threading, re, socket, subprocess, sqlite3, datetime
 
 #twitter_thread = eb_twitter.TwitterThread()
@@ -45,7 +46,8 @@ class EnforsBot:
             #Incoming from     Send response to
             #===============   ================
             "TwitterStreams" : "TwitterRest",
-            "Telegram"       : "Telegram"
+            "Telegram"       : "Telegram",
+            "IRC"            : "IRC"
         }
 
         self.location = None
@@ -78,6 +80,9 @@ class EnforsBot:
 
             elif message.msg_type == eb_message.MSG_TYPE_LOCATION_UPDATE:
                 self.handle_incoming_location_update(message)
+
+            elif message.msg_type == eb_message.MSG_TYPE_NOTIFY_USER:
+                self.handle_incoming_notify_user(message)
             else:
                 print("Unsupported incoming message type: %d" % message.msg_type)
         
@@ -92,8 +97,12 @@ class EnforsBot:
             telegram_thread = eb_telegram.TelegramThread(self.config)
             self.config.threads["Telegram"] = telegram_thread
 
+            irc_thread = eb_irc.IRCThread(self.config)
+            self.config.threads["IRC"] = irc_thread
+
         twitter_thread.start()
         telegram_thread.start()
+        irc_thread.start()
 
 
     def handle_incoming_user_message(self, message, response_thread):
@@ -170,6 +179,15 @@ class EnforsBot:
         return None
 
 
+    def handle_incoming_notify_user(self, message):
+
+        out_message = eb_message.Message("Main",
+                                         eb_message.MSG_TYPE_USER_MESSAGE,
+                                         { "user": message.data["user"],
+                                           "text": message.data["text"] })
+        self.config.send_message("TwitterRest", out_message)
+
+    
     def respond_location(self, message):
         #if not self.location:
         #    return "There whereabouts of Enfors are currently unknown."
