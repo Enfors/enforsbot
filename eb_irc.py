@@ -17,7 +17,7 @@ class IRCThread(eb_thread.Thread):
             self.nickname = self.config.read_private("irc_nickname")
             self.password = self.config.read_private("irc_password")
 
-        self.bot = irc.IRCBot(self.nickname, self.password, debug = True)
+        self.bot = irc.IRCBot(self.nickname, self.password, debug = False)
 
         self.bot.connect("irc.freenode.net", "#BotyMcBotface")
 
@@ -81,7 +81,7 @@ class IRCThread(eb_thread.Thread):
         if (msg_type == "JOIN" and channel.lower() == "#botymcbotface"):
 
             if (sender.replace("@", "").lower in [ "enfors", "botymcbotface",
-                                                   "botymctest", "enforsbot"]:
+                                                   "botymctest", "enforsbot"]):
                 return None
             
             message = eb_message.Message("IRC",
