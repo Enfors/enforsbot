@@ -71,8 +71,10 @@ class IRCThread(eb_thread.Thread):
             
         if (msg_type == "JOIN" and channel.lower() == "#botymcbotface"):
 
-            if (sender.replace("@", "").lower in [ "enfors", "botymcbotface",
-                                                   "botymctest", "enforsbot"]):
+            if (sender.replace("@", "").lower() in [ "enfors",
+                                                     "botymcbotface",
+                                                     "botymctest",
+                                                     "enforsbot"]):
                 return None
             
             message = eb_message.Message("IRC",
