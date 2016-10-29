@@ -36,8 +36,9 @@ class IRCThread(eb_thread.Thread):
             message = self.config.recv_message("IRC", wait = False)
 
             if message:
-                self.bot.privmsg(message.data["user"],
-                                 message.data["text"])
+                for line in message.data["text"].split("\n"):
+                    self.bot.privmsg(message.data["user"],
+                                     line.strip())
 
             # Check for messages from IRC.
             sender, msg_type, channel, msg_text = self.bot.get_msg(1)
