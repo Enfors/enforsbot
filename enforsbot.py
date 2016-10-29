@@ -34,6 +34,7 @@ class EnforsBot:
             "LocationUpdate .*"  : self.handle_incoming_location_update,
             "locate"             : self.respond_location,
             "syscond"            : self.respond_syscond,
+            "status"             : self.respond_status,
         }
 
         # Incoming user messages can come from several different threads.
@@ -100,9 +101,17 @@ class EnforsBot:
             irc_thread = eb_irc.IRCThread(self.config)
             self.config.threads["IRC"] = irc_thread
 
+        self.config.set_thread_state("Twitter", "starting")
         twitter_thread.start()
+        self.config.set_thread_state("Twitter", "running")
+
+        self.config.set_thread_state("Telegram", "starting")
         telegram_thread.start()
+        self.config.set_thread_state("Telegram", "running")
+
+        self.config.set_thread_state("IRC", "starting")
         irc_thread.start()
+        self.config.set_thread_state("IRC", "running")
 
 
     def handle_incoming_user_message(self, message, response_thread):
@@ -225,6 +234,16 @@ class EnforsBot:
     def respond_syscond(self, message):
         return self.check_syscond()
 
+
+    def respond_status(self, message):
+        output = ""
+
+        for thread in self.config.threads:
+            output += "%s: %s\n" % (thread,
+                                    self.config.get_thread_state(thread))
+
+        return output
+    
 
     def check_syscond(self):
         syscond_output = subprocess.Popen(["syscond", "status", "-n"],
