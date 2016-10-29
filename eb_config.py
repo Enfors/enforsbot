@@ -16,10 +16,27 @@ class Config:
             "Telegram"    : queue.Queue(),
             "IRC"         : queue.Queue(),
             }
+
+        self.thread_states = { }
         
+        for thread in self.threads:
+            self.thread_states[thread] = "stopped"
+
+            
     def read_private(self, filename):
         with open("private/" + filename, "r") as f:
             return f.read().strip()
+
+        
+    def set_thread_state(self, thread, state):
+        with self.lock:
+            self.thread_states[thread] = state
+            return True
+
+
+    def get_thread_state(self, thread):
+        with self.lock:
+            return self.thread_states[thread]
         
 
     def send_message(self, recipient, message):
