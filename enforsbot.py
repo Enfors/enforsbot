@@ -173,8 +173,9 @@ class EnforsBot:
                 
             else: # if leaving
                 
-                # If leaving the location I'm currently at (sometimes the "left source"
-                # message arrives AFTER "arrived at destination" message), skipping those.
+                # If leaving the location I'm currently at (sometimes
+                # the "left source" message arrives AFTER "arrived at
+                # destination" message), skipping those.
                 if self.arrived == False or location == self.location:
 
                     cur.execute("insert into LOCATION_HISTORY "
