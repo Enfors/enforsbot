@@ -28,10 +28,16 @@ class TelegramThread(eb_thread.Thread):
         self.config.send_message("Main", message)
 
         while True:
-            message = self.config.recv_message("Telegram")
+            try:
+                message = self.config.recv_message("Telegram")
 
-            if message.msg_type == eb_message.MSG_TYPE_USER_MESSAGE:
-                self.bot.sendMessage(message.data["user"], message.data["text"])
+                if message.msg_type == eb_message.MSG_TYPE_USER_MESSAGE:
+                    self.bot.sendMessage(message.data["user"],
+                                         message.data["text"])
+            except error:
+                print("ERROR: %s" % error)
+                self.config.set_thread_state("Telegram", "exception")
+                time.sleep(60)
 
         
 

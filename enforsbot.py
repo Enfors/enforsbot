@@ -109,9 +109,13 @@ class EnforsBot:
         twitter_thread.start()
         self.config.set_thread_state("Twitter", "running")
 
-        self.config.set_thread_state("Telegram", "starting")
-        telegram_thread.start()
-        self.config.set_thread_state("Telegram", "running")
+        try:
+            self.config.set_thread_state("Telegram", "starting")
+            telegram_thread.start()
+            self.config.set_thread_state("Telegram", "running")
+        except error:
+            self.config.set_thread_state("Telegram", "exception")
+            print("Failed to start Telegram thread: " + error)
 
         self.config.set_thread_state("IRC", "starting")
         irc_thread.start()
