@@ -85,6 +85,9 @@ class EnforsBot:
 
             elif message.msg_type == eb_message.MSG_TYPE_NOTIFY_USER:
                 self.handle_incoming_notify_user(message)
+
+            elif message.msg_type == eb_message.MSG_TYPE_IRC_LOG:
+                self.log_irc_message(message)
             else:
                 print("Unsupported incoming message type: %d" % message.msg_type)
         
@@ -127,15 +130,6 @@ class EnforsBot:
         if (response_thread == "IRC"):
             msg_type = message.data["msg_type"]
             channel  = message.data["channel"]
-
-            #print("IRC message:")
-            #print("- User    : %s" % user)
-            #print("- Msg_type: %s" % msg_type)
-            #print("- Channel : %s" % channel)
-            #print("- Text    : %s" % text)
-            
-            # Log it
-            self.log_irc_message(message)
 
             # But don't respond unless it's a private message.
             if (channel != "enforsbot"):

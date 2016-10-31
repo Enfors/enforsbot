@@ -52,11 +52,11 @@ class IRCThread(eb_thread.Thread):
     def handle_irc_message(self, sender, msg_type, channel, msg_text):
         
         message = eb_message.Message("IRC",
-                                     eb_message.MSG_TYPE_USER_MESSAGE,
-                                     { "user": sender.replace("@", ""),
+                                     eb_message.MSG_TYPE_IRC_LOG,
+                                     { "user"    : sender,
                                        "msg_type": msg_type,
                                        "channel" : channel,
-                                       "text": msg_text })
+                                       "text"    : msg_text })
         self.config.send_message("Main", message)
 
         if (msg_type == "PRIVMSG" and channel == self.nickname):
