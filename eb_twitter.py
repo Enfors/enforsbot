@@ -106,11 +106,12 @@ class TweepyStreamListener(tweepy.StreamListener):
         
     
     def on_connect(self):
-        print("Streaming connection established.")
+        #print("Streaming connection established.")
+        pass
 
         
     def on_disconnect(self):
-        print("Streaming connection lost.")
+        print("Twitter: Streaming connection lost.")
         
     
     def on_status(self, status):
