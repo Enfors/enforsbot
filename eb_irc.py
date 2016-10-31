@@ -1,5 +1,6 @@
 # eb_irc.py by Christer Enfors
 
+import time
 import eb_thread, eb_message
 import botymcbotface.irc as irc
 
@@ -50,6 +51,14 @@ class IRCThread(eb_thread.Thread):
 
     def handle_irc_message(self, sender, msg_type, channel, msg_text):
         
+        message = eb_message.Message("IRC",
+                                     eb_message.MSG_TYPE_USER_MESSAGE,
+                                     { "user": sender.replace("@", ""),
+                                       "msg_type": msg_type,
+                                       "channel" : channel,
+                                       "text": msg_text })
+        self.config.send_message("Main", message)
+
         if (msg_type == "PRIVMSG" and channel == self.nickname):
             self.bot.debug_print("Private message: %s->%s: %s" % (sender,
                                                                   channel,
@@ -58,13 +67,7 @@ class IRCThread(eb_thread.Thread):
             print("IRC: Incoming message from %s: '%s'" %
                   (sender, msg_text))
             
-            message = eb_message.Message("IRC",
-                                         eb_message.MSG_TYPE_USER_MESSAGE,
-                                         { "user": sender.replace("@", ""),
-                                           "text": msg_text })
-            self.config.send_message("Main", message)
-            
-            
+
         if (msg_type == "PRIVMSG" and channel != self.nickname):
             self.bot.debug_print("Channel message: %s @ %s: %s" % (sender,
                                                                    channel,
@@ -84,4 +87,3 @@ class IRCThread(eb_thread.Thread):
                                            "text": "We have a visitor in " \
                                            "#BotyMcBotface: %s." % sender})
             self.config.send_message("Main", message)
-                                           

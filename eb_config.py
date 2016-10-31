@@ -18,7 +18,7 @@ class Config:
             }
 
         self.thread_states = { }
-        
+
         for thread in self.threads:
             self.thread_states[thread] = "stopped"
 

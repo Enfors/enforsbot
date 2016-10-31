@@ -54,8 +54,9 @@ class EnforsBot:
         self.location = None
         self.arrived  = False
 
-        self.db       = sqlite3.connect("enforsbot.db",
-                                        detect_types = sqlite3.PARSE_DECLTYPES)
+        self.db = sqlite3.connect("enforsbot.db",
+                                  detect_types = sqlite3.PARSE_DECLTYPES)
+
 
 
     def start(self):
@@ -122,6 +123,28 @@ class EnforsBot:
 
         response = "I'm afraid I don't understand."
 
+        # If this is an IRC message:
+        if (response_thread == "IRC"):
+            msg_type = message.data["msg_type"]
+            channel  = message.data["channel"]
+
+            #print("IRC message:")
+            #print("- User    : %s" % user)
+            #print("- Msg_type: %s" % msg_type)
+            #print("- Channel : %s" % channel)
+            #print("- Text    : %s" % text)
+            
+            # Log it
+            self.log_irc_message(message)
+
+            # But don't respond unless it's a private message.
+            if (channel != "enforsbot"):
+                return None
+
+            # We should't try to respond to NickServ.
+            if (user.lower() == "nickserv"):
+                return None
+            
         text = text.lower()
 
         for pattern in self.responses.keys():
@@ -141,6 +164,21 @@ class EnforsBot:
             self.config.send_message(response_thread, message)
 
 
+    def log_irc_message(self, message):
+        with self.config.lock, self.db:
+
+            cur = self.db.cursor()
+
+            cur.execute("insert into IRC_CHANNEL_LOG "
+                        "(user, type, channel, message, time) values "
+                        "(?, ?, ?, ?, ?)",
+                        (message.data["user"],
+                         message.data["msg_type"],
+                         message.data["channel"],
+                         message.data["text"],
+                         datetime.datetime.now()))
+
+            
     def respond_ip(self, message):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("gmail.com", 80)) # I'm abusing gmail. I'm sure it can take it.
