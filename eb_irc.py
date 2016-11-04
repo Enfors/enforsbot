@@ -1,8 +1,10 @@
 # eb_irc.py by Christer Enfors
 
-import time
+import time, re, sqlite3, datetime
 import eb_thread, eb_message
 import botymcbotface.irc as irc
+
+prev_msg_text = ""
 
 class IRCThread(eb_thread.Thread):
 
@@ -17,6 +19,8 @@ class IRCThread(eb_thread.Thread):
         with (self.config.lock):
             self.nickname = self.config.read_private("irc_nickname")
             self.password = self.config.read_private("irc_password")
+            self.db = sqlite3.connect("enforsbot.db",
+                                      detect_types = sqlite3.PARSE_DECLTYPES)
 
         self.bot = irc.IRCBot(self.nickname, self.password, debug = False)
 
@@ -51,13 +55,7 @@ class IRCThread(eb_thread.Thread):
 
     def handle_irc_message(self, sender, msg_type, channel, msg_text):
         
-        message = eb_message.Message("IRC",
-                                     eb_message.MSG_TYPE_IRC_LOG,
-                                     { "user"    : sender,
-                                       "msg_type": msg_type,
-                                       "channel" : channel,
-                                       "text"    : msg_text })
-        self.config.send_message("Main", message)
+        self.log_irc_message(sender, msg_type, channel, msg_text)
 
         if (msg_type == "PRIVMSG" and channel == self.nickname):
             self.bot.debug_print("Private message: %s->%s: %s" % (sender,
@@ -66,12 +64,12 @@ class IRCThread(eb_thread.Thread):
             
             print("IRC: Incoming message from %s: '%s'" %
                   (sender, msg_text))
-            
 
         if (msg_type == "PRIVMSG" and channel != self.nickname):
             self.bot.debug_print("Channel message: %s @ %s: %s" % (sender,
                                                                    channel,
                                                                    msg_text))
+            self.handle_channel_message(sender, channel, msg_text)
             
         if (msg_type == "JOIN" and channel.lower() == "#botymcbotface"):
 
@@ -87,3 +85,30 @@ class IRCThread(eb_thread.Thread):
                                            "text": "We have a visitor in " \
                                            "#BotyMcBotface: %s." % sender})
             self.config.send_message("Main", message)
+
+    def handle_channel_message(self, sender, channel, msg_text):
+        global prev_msg_text
+
+        match = re.search("^s/([^/]+)/([^/]*)/(g?)$",
+                          msg_text.strip())
+
+        if match:
+            old_text = match.group(1)
+            new_text = match.group(2)
+            self.bot.privmsg(channel, "Correction: %s" %
+                             prev_msg_text.replace(old_text, new_text))
+        else:
+            prev_msg_text = msg_text
+
+    def log_irc_message(self, sender, msg_type, channel, text):
+
+        with self.config.lock, self.db:
+
+            cur = self.db.cursor()
+
+            cur.execute("insert into IRC_CHANNEL_LOG "
+                        "(user, type, channel, message, time) values "
+                        "(?, ?, ?, ?, ?)",
+                        (sender, msg_type, channel, text,
+                        datetime.datetime.now()))
+            

@@ -85,9 +85,6 @@ class EnforsBot:
 
             elif message.msg_type == eb_message.MSG_TYPE_NOTIFY_USER:
                 self.handle_incoming_notify_user(message)
-
-            elif message.msg_type == eb_message.MSG_TYPE_IRC_LOG:
-                self.log_irc_message(message)
             else:
                 print("Unsupported incoming message type: %d" % message.msg_type)
         
@@ -158,21 +155,6 @@ class EnforsBot:
             self.config.send_message(response_thread, message)
 
 
-    def log_irc_message(self, message):
-        with self.config.lock, self.db:
-
-            cur = self.db.cursor()
-
-            cur.execute("insert into IRC_CHANNEL_LOG "
-                        "(user, type, channel, message, time) values "
-                        "(?, ?, ?, ?, ?)",
-                        (message.data["user"],
-                         message.data["msg_type"],
-                         message.data["channel"],
-                         message.data["text"],
-                         datetime.datetime.now()))
-
-            
     def respond_ip(self, message):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("gmail.com", 80)) # I'm abusing gmail. I'm sure it can take it.
