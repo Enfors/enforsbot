@@ -184,7 +184,8 @@ class EnforsBot:
 
                 if callable(response):
                     response = response(text)
-                                        
+
+        response = response.strip() + "\n"
         if response is not None:
             message = eb_message.Message("Main",
                                          eb_message.MSG_TYPE_USER_MESSAGE,
@@ -299,10 +300,13 @@ class EnforsBot:
     
 
     def check_syscond(self):
-        syscond_output = subprocess.Popen(["syscond", "status", "-n"],
-                                          stdout=subprocess.PIPE).communicate()[0]
+        try:
+            syscond_output = subprocess.Popen(["syscond", "status", "-n"],
+                                              stdout=subprocess.PIPE).communicate()[0]
 
-        return syscond_output.decode("utf-8")
+            return syscond_output.decode("utf-8")
+        except FileNotFoundError:
+            return "SysCond is not installed on this host."
 
 
     def get_datetime_diff_string(self, d1, d2):
@@ -351,4 +355,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    print("Bot exiting.")
