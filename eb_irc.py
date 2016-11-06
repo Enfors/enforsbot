@@ -37,6 +37,8 @@ class IRCThread(eb_thread.Thread):
 
             if message:
                 if (message.msg_type == eb_message.MSG_TYPE_STOP_THREAD):
+                    self.bot.send("QUIT :Bot stopped.")
+                    self.bot.get_msg(5)
                     self.stop()
                     return
                 if (message.msg_type == eb_message.MSG_TYPE_USER_MESSAGE):
