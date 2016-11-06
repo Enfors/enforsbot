@@ -127,7 +127,7 @@ class EnforsBot:
 
     def stop_all_threads(self):
 
-        print("Stop!")
+        print("") # Add a newline to get away from "^C" on screen
         
         with self.config.lock:
 
