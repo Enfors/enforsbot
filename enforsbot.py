@@ -167,7 +167,7 @@ class EnforsBot:
             channel  = message.data["channel"]
 
             # But don't respond unless it's a private message.
-            if (channel != "enforsbot"):
+            if (channel.lower() != "enforsbot"):
                 return None
 
             # We should't try to respond to NickServ.

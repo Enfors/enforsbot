@@ -56,6 +56,7 @@ class IRCThread(eb_thread.Thread):
         self.log_irc_message(sender, msg_type, channel, msg_text)
 
         if (msg_type == "PRIVMSG" and channel == self.nickname):
+            self.handle_private_message(sender, msg_type, channel, msg_text)
             self.bot.debug_print("Private message: %s->%s: %s" % (sender,
                                                                   channel,
                                                                   msg_text))
@@ -84,6 +85,17 @@ class IRCThread(eb_thread.Thread):
                                            "#BotyMcBotface: %s." % sender})
             self.config.send_message("Main", message)
 
+
+    def handle_private_message(self, sender, msg_type, channel, msg_text):
+        message = eb_message.Message("IRC",
+                                     eb_message.MSG_TYPE_USER_MESSAGE,
+                                     { "user"     : sender,
+                                       "msg_type" : msg_type,
+                                       "channel"  : channel,
+                                       "text"     : msg_text })
+        self.config.send_message("Main", message)
+
+            
     def handle_channel_message(self, sender, channel, msg_text):
         global prev_msg_text
 
