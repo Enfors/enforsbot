@@ -31,9 +31,9 @@ class TwitterThread(eb_thread.Thread):
                                              self.config)
         self.rest_thread.start()
         
-        self.streams_thread = TwitterStreamsThread("TwitterStreams",
-                                                   self.config)
-        self.streams_thread.start()
+        #self.streams_thread = TwitterStreamsThread("TwitterStreams",
+        #                                           self.config)
+        #self.streams_thread.start()
         
         message = eb_message.Message("Twitter", eb_message.MSG_TYPE_THREAD_STARTED)
         self.config.send_message("Main", message)
@@ -96,10 +96,15 @@ class TwitterStreamsThread(eb_thread.Thread):
                                      eb_message.MSG_TYPE_THREAD_STARTED)
         self.config.send_message("Main", message)
         #self.stream.filter(track=['#svpol'])
-        try:
-            self.stream.userstream(async = False)
+
+        streaming = False
+        
+        while True:
+            try:
+                if not streaming:
+                    self.stream.userstream(async = False)
+                    streaming = True
             
-            while True:
                 message = self.config.recv_message("TwitterStreams",
                                                    wait = False)
 
@@ -112,15 +117,15 @@ class TwitterStreamsThread(eb_thread.Thread):
                 print("Tick.")
                 time.sleep(1)
                     
-        except AttributeError as err:
-            print("Twitter: Attribute exception handled: %s" % err)
-        except ConnectionError as err:
-            print("Twitter: Connection exception handled: %s" % err)
-        except ValueError as err:
-            print("Twitter: Value exception handled: %s" % err)
-        except OSError as err:
-            print("Twitter: OS exception handled: %s" % err)
-        except Exception as err:
+            except AttributeError as err:
+                print("Twitter: Attribute exception handled: %s" % err)
+            except ConnectionError as err:
+                print("Twitter: Connection exception handled: %s" % err)
+            except ValueError as err:
+                print("Twitter: Value exception handled: %s" % err)
+            except OSError as err:
+                print("Twitter: OS exception handled: %s" % err)
+            except Exception as err:
                 print("Twitter: Exception handled: %s" % err)
 
         
