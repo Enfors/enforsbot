@@ -39,8 +39,10 @@ class IRCThread(eb_thread.Thread):
                 if (message.msg_type == eb_message.MSG_TYPE_STOP_THREAD):
                     self.stop()
                     return
-                for line in message.data["text"].rstrip().split("\n"):
-                    self.bot.privmsg(message.data["user"], line)
+                if (message.msg_type == eb_message.MSG_TYPE_USER_MESSAGE):
+                    # Send this message as a private message.
+                    for line in message.data["text"].rstrip().split("\n"):
+                        self.bot.privmsg(message.data["user"], line)
 
             # Check for messages from IRC.
             msg = self.bot.get_msg(1)
