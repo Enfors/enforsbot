@@ -17,7 +17,7 @@ class IRCThread(eb_thread.Thread):
             self.db = sqlite3.connect("enforsbot.db",
                                       detect_types = sqlite3.PARSE_DECLTYPES)
 
-        self.bot = irc.IRCBot(self.nickname, self.password, debug = False)
+        self.bot = irc.IRCBot(self.nickname, self.password, debug_level = 1)
 
         self.bot.connect("irc.freenode.net", "#BotyMcBotface")
 
@@ -44,73 +44,78 @@ class IRCThread(eb_thread.Thread):
                                      line.strip())
 
             # Check for messages from IRC.
-            sender, msg_type, channel, msg_text = self.bot.get_msg(1)
+            msg = self.bot.get_msg(1)
 
-            if sender or msg_type or channel or msg_text:
-                self.handle_irc_message(sender, msg_type,
-                                        channel, msg_text)
+            if not msg:         # If timed out
+                continue
+            
+            self.handle_irc_message(msg)
 
 
-    def handle_irc_message(self, sender, msg_type, channel, msg_text):
+    def handle_irc_message(self, msg):
         
-        self.log_irc_message(sender, msg_type, channel, msg_text)
+        self.log_irc_message(msg)
 
-        if (msg_type == "PRIVMSG" and channel == self.nickname):
-            self.handle_private_message(sender, msg_type, channel, msg_text)
-            self.bot.debug_print("Private message: %s->%s: %s" % (sender,
-                                                                  channel,
-                                                                  msg_text))
+        if (msg.msg_type == "PRIVMSG" and msg.channel == self.nickname):
+            self.handle_private_message(msg)
+            self.bot.debug_print("Private message: %s->%s: %s" % (msg.sender,
+                                                                  msg.channel,
+                                                                  msg.msg_text),
+                                 1)
             
             print("IRC: Incoming message from %s: '%s'" %
-                  (sender, msg_text))
+                  (msg.sender, msg.msg_text))
 
-        if (msg_type == "PRIVMSG" and channel != self.nickname):
-            self.bot.debug_print("Channel message: %s @ %s: %s" % (sender,
-                                                                   channel,
-                                                                   msg_text))
-            self.handle_channel_message(sender, channel, msg_text)
+        if (msg.msg_type == "PRIVMSG" and msg.channel != self.nickname):
+            self.bot.debug_print("Channel message: %s @ %s: %s" % (msg.sender,
+                                                                   msg.channel,
+                                                                   msg.msg_text),
+                                 1)
+            self.handle_channel_message(msg)
             
-        if (msg_type == "JOIN" and channel.lower() == "#botymcbotface"):
+        if (msg.msg_type == "JOIN" and
+            msg.channel.lower() == "#botymcbotface"):
 
-            if (sender.replace("@", "").lower() in [ "enfors",
-                                                     "botymcbotface",
-                                                     "botymctest",
-                                                     "enforsbot"]):
+            if (msg.sender.replace("@", "").lower() in [ "enfors",
+                                                         "botymcbotface",
+                                                         "botymctest",
+                                                         "enforsbot"]):
                 return None
             
             message = eb_message.Message("IRC",
                                          eb_message.MSG_TYPE_NOTIFY_USER,
                                          { "user": "enfors",
                                            "text": "We have a visitor in " \
-                                           "#BotyMcBotface: %s." % sender})
+                                           "#BotyMcBotface: %s." % msg.sender})
             self.config.send_message("Main", message)
 
 
-    def handle_private_message(self, sender, msg_type, channel, msg_text):
+    def handle_private_message(self, msg):
         message = eb_message.Message("IRC",
                                      eb_message.MSG_TYPE_USER_MESSAGE,
-                                     { "user"     : sender,
-                                       "msg_type" : msg_type,
-                                       "channel"  : channel,
-                                       "text"     : msg_text })
+                                     { "user"     : msg.sender,
+                                       "msg_type" : msg.msg_type,
+                                       "channel"  : msg.channel,
+                                       "text"     : msg.msg_text })
         self.config.send_message("Main", message)
 
             
-    def handle_channel_message(self, sender, channel, msg_text):
+    def handle_channel_message(self, msg):
         global prev_msg_text
 
         match = re.search("^s/([^/]+)/([^/]*)/(g?)$",
-                          msg_text.strip())
+                          msg.msg_text.strip())
 
         if match:
             old_text = match.group(1)
             new_text = match.group(2)
-            self.bot.privmsg(channel, "Correction: %s" %
+            self.bot.privmsg(msg.channel, "Correction: %s" %
                              prev_msg_text.replace(old_text, new_text))
         else:
-            prev_msg_text = msg_text
+            prev_msg_text = msg.msg_text
+            
 
-    def log_irc_message(self, sender, msg_type, channel, text):
+    def log_irc_message(self, msg):
 
         with self.config.lock, self.db:
 
@@ -119,6 +124,6 @@ class IRCThread(eb_thread.Thread):
             cur.execute("insert into IRC_CHANNEL_LOG "
                         "(user, type, channel, message, time) values "
                         "(?, ?, ?, ?, ?)",
-                        (sender, msg_type, channel, text,
+                        (msg.sender, msg.msg_type, msg.channel, msg.msg_text,
                         datetime.datetime.now()))
             
