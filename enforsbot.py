@@ -4,7 +4,7 @@
 
 import eb_config, eb_thread, eb_queue, eb_message, eb_twitter, eb_telegram
 import eb_irc
-import time, threading, re, socket, subprocess, sqlite3, datetime
+import time, threading, re, socket, subprocess, sqlite3, sys
 
 #twitter_thread = eb_twitter.TwitterThread()
 
@@ -68,56 +68,90 @@ class EnforsBot:
 
     def main_loop(self):
         "The main loop of the bot."
-        while True:
-            message = self.config.recv_message("Main")
+        try:
+            while True:
+                message = self.config.recv_message("Main")
 
-            #print("Main: Incoming message from thread %s..." % message.sender)
+                #print("Main: Incoming message from thread %s..." % message.sender)
             
-            if message.msg_type == eb_message.MSG_TYPE_THREAD_STARTED:
-                print("Thread started: %s" % message.sender)
+                if message.msg_type == eb_message.MSG_TYPE_THREAD_STARTED:
+                    print("Thread started: %s" % message.sender)
+                    self.config.set_thread_state(message.sender,
+                                                 "running")
 
-            elif message.msg_type == eb_message.MSG_TYPE_USER_MESSAGE:
-                self.handle_incoming_user_message(message,
-                                                  self.response_threads[message.sender])
+                elif message.msg_type == eb_message.MSG_TYPE_THREAD_STOPPED:
+                    print("Thread stopped: %s" % message.sender)
+                    self.config.set_thread_state(message.sender,
+                                                 "stopped")
 
-            elif message.msg_type == eb_message.MSG_TYPE_LOCATION_UPDATE:
-                self.handle_incoming_location_update(message)
+                elif message.msg_type == eb_message.MSG_TYPE_USER_MESSAGE:
+                    self.handle_incoming_user_message(message,
+                                                      self.response_threads[message.sender])
 
-            elif message.msg_type == eb_message.MSG_TYPE_NOTIFY_USER:
-                self.handle_incoming_notify_user(message)
-            else:
-                print("Unsupported incoming message type: %d" % message.msg_type)
+                elif message.msg_type == eb_message.MSG_TYPE_LOCATION_UPDATE:
+                    self.handle_incoming_location_update(message)
+
+                elif message.msg_type == eb_message.MSG_TYPE_NOTIFY_USER:
+                    self.handle_incoming_notify_user(message)
+                else:
+                    print("Unsupported incoming message type: %d" % message.msg_type)
+        except (KeyboardInterrupt, SystemExit):
+            self.stop_all_threads()
+            return
         
 
     def start_all_threads(self):
         "Start all necessary threads."
         with self.config.lock:
 
-            twitter_thread = eb_twitter.TwitterThread(self.config)
+            twitter_thread = eb_twitter.TwitterThread("Twitter",
+                                                      self.config)
             self.config.threads["Twitter"] = twitter_thread
 
-            telegram_thread = eb_telegram.TelegramThread(self.config)
+            telegram_thread = eb_telegram.TelegramThread("Telegram",
+                                                         self.config)
             self.config.threads["Telegram"] = telegram_thread
 
-            irc_thread = eb_irc.IRCThread(self.config)
+            irc_thread = eb_irc.IRCThread("IRC", self.config)
             self.config.threads["IRC"] = irc_thread
 
         self.config.set_thread_state("Twitter", "starting")
         twitter_thread.start()
-        self.config.set_thread_state("Twitter", "running")
 
-        try:
-            self.config.set_thread_state("Telegram", "starting")
-            telegram_thread.start()
-            self.config.set_thread_state("Telegram", "running")
-        except error:
-            self.config.set_thread_state("Telegram", "exception")
-            print("Failed to start Telegram thread: " + error)
+        self.config.set_thread_state("Telegram", "starting")
+        telegram_thread.start()
 
         self.config.set_thread_state("IRC", "starting")
         irc_thread.start()
-        self.config.set_thread_state("IRC", "running")
 
+
+    def stop_all_threads(self):
+
+        print("Stop!")
+        
+        with self.config.lock:
+
+            threads_to_stop = [ thread for thread in self.config.threads if
+                                self.config.thread_states[thread] == "running" ]
+
+            print("Stopping threads: %s" % threads_to_stop)
+
+        for thread in threads_to_stop:
+            if thread not in self.config.threads:
+                print("ERROR: %s not in self.config.threads!" % thread)
+            self.stop_thread(thread)
+
+        print("ALL THREADS STOPPED.")
+
+
+    def stop_thread(self, thread):
+
+        message = eb_message.Message("Main",
+                                     eb_message.MSG_TYPE_STOP_THREAD, { } )
+        self.config.send_message(thread, message)
+
+        self.config.threads[thread].join()
+        
 
     def handle_incoming_user_message(self, message, response_thread):
         user = message.data["user"]
@@ -317,3 +351,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    print("Bot exiting.")

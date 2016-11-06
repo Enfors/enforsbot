@@ -8,13 +8,8 @@ prev_msg_text = ""
 
 class IRCThread(eb_thread.Thread):
 
-    def __init__(self, config):
-        super().__init__()
-
-        self.config = config
-
-
     def run(self):
+        super().run()
         
         with (self.config.lock):
             self.nickname = self.config.read_private("irc_nickname")
@@ -41,6 +36,9 @@ class IRCThread(eb_thread.Thread):
             message = self.config.recv_message("IRC", wait = False)
 
             if message:
+                if (message.msg_type == eb_message.MSG_TYPE_STOP_THREAD):
+                    self.stop()
+                    return
                 for line in message.data["text"].split("\n"):
                     self.bot.privmsg(message.data["user"],
                                      line.strip())

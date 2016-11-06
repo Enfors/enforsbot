@@ -2,6 +2,8 @@ import eb_thread, eb_message
 
 import tweepy
 
+import time
+
 def read_private(filename):
     with open("private/" + filename, "r") as f:
         return f.read().replace('\n', '')
@@ -15,13 +17,9 @@ access_token_secret = read_private("access_token_secret")
 bot_screen_name = "EnforsBot"
 
 class TwitterThread(eb_thread.Thread):
-    def __init__(self, config):
-        super().__init__()
-        
-        self.config = config
-
         
     def run(self):
+        super().run()
         with self.config.lock:
             self.config.twitter_auth = tweepy.OAuthHandler(consumer_key,
                                                            consumer_secret)
@@ -29,26 +27,35 @@ class TwitterThread(eb_thread.Thread):
                                                       access_token_secret)
 
         
-        self.rest_thread = TwitterRestThread(self.config)
+        self.rest_thread = TwitterRestThread("TwitterRest",
+                                             self.config)
         self.rest_thread.start()
         
-        self.streams_thread = TwitterStreamsThread(self.config)
+        self.streams_thread = TwitterStreamsThread("TwitterStreams",
+                                                   self.config)
         self.streams_thread.start()
         
         message = eb_message.Message("Twitter", eb_message.MSG_TYPE_THREAD_STARTED)
         self.config.send_message("Main", message)
 
+        while True:
+            message = self.config.recv_message("Twitter")
+
+            if message.msg_type == eb_message.MSG_TYPE_STOP_THREAD:
+                self.stop()
+                return
+
 
 class TwitterRestThread(eb_thread.Thread):
-    def __init__(self, config):
-        super().__init__()
-        self.config = config
-
+    def __init__(self, name, config):
+        super().__init__(name, config)
+        
         with self.config.lock:
             self.api = tweepy.API(self.config.twitter_auth)
 
         
     def run(self):
+        super().run()
         message = eb_message.Message("TwitterRest",
                                      eb_message.MSG_TYPE_THREAD_STARTED)
         self.config.send_message("Main", message)
@@ -59,7 +66,11 @@ class TwitterRestThread(eb_thread.Thread):
             message = self.config.recv_message("TwitterRest")
 
             if message.msg_type == eb_message.MSG_TYPE_USER_MESSAGE:
-                self.send_direct_message(message.data["text"], message.data["user"])
+                self.send_direct_message(message.data["text"],
+                                         message.data["user"])
+            elif message.msg_type == eb_message.MSG_TYPE_STOP_THREAD:
+                self.stop()
+                return
 
 
     def send_direct_message(self, message, user):
@@ -69,33 +80,49 @@ class TwitterRestThread(eb_thread.Thread):
         
 
 class TwitterStreamsThread(eb_thread.Thread):
-    def __init__(self, config):
-        super().__init__()
-        self.config = config
+    def __init__(self, name, config):
+        super().__init__(name, config)
+        
         self.listener = TweepyStreamListener()
         self.listener.set_config(config)
         self.stream = tweepy.Stream(auth = self.config.twitter_auth,
-                                    listener = self.listener)
+                                    listener = self.listener,
+                                    timeout = 30)
 
         
     def run(self):
+        super().run()
         message = eb_message.Message("TwitterStreams",
                                      eb_message.MSG_TYPE_THREAD_STARTED)
         self.config.send_message("Main", message)
         #self.stream.filter(track=['#svpol'])
-        while True:
-            try:
-                self.stream.userstream()
-            except AttributeError as err:
-                print("Twitter: Attribute exception handled: %s" % err)
-            except ConnectionError as err:
-                print("Twitter: Connection exception handled: %s" % err)
-            except ValueError as err:
-                print("Twitter: Value exception handled: %s" % err)
-            except OSError as err:
-                print("Twitter: OS exception handled: %s" % err)
-            except Exception as err:
+        try:
+            self.stream.userstream(async = False)
+            
+            while True:
+                message = self.config.recv_message("TwitterStreams",
+                                                   wait = False)
+
+                if message and \
+                   message.msg_type == eb_message.MSG_TYPE_STOP_THREAD:
+                    print("Received stop command.")
+                    self.stop()
+                    return
+
+                print("Tick.")
+                time.sleep(1)
+                    
+        except AttributeError as err:
+            print("Twitter: Attribute exception handled: %s" % err)
+        except ConnectionError as err:
+            print("Twitter: Connection exception handled: %s" % err)
+        except ValueError as err:
+            print("Twitter: Value exception handled: %s" % err)
+        except OSError as err:
+            print("Twitter: OS exception handled: %s" % err)
+        except Exception as err:
                 print("Twitter: Exception handled: %s" % err)
+
         
 
 
@@ -115,8 +142,7 @@ class TweepyStreamListener(tweepy.StreamListener):
         
     
     def on_status(self, status):
-#        print("\nNew status: %s" % status.text)
-        pass
+        return False
 
 
     def on_direct_message(self, status):

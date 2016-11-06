@@ -11,14 +11,14 @@ TOKEN  = read_private("telegram_token")
 bot_name = "Enfors_bot"
 
 class TelegramThread(eb_thread.Thread):
-    def __init__(self, config):
-        super().__init__()
-        
-        self.config = config
+    def __init__(self, name, config):
+        super().__init__(name, config)
+
         self.state = None # Temp. Remove later.
 
         
     def run(self):
+        super().run()
         with self.config.lock:
             self.bot = telepot.Bot(TOKEN)
 
@@ -31,6 +31,10 @@ class TelegramThread(eb_thread.Thread):
             try:
                 message = self.config.recv_message("Telegram")
 
+                if (message.msg_type == eb_message.MSG_TYPE_STOP_THREAD):
+                    self.stop()
+                    return
+                
                 if message.msg_type == eb_message.MSG_TYPE_USER_MESSAGE:
                     self.bot.sendMessage(message.data["user"],
                                          message.data["text"])

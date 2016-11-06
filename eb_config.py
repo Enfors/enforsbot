@@ -5,16 +5,20 @@ class Config:
         self.lock    = threading.Lock()
 
         self.threads = {
-            "Twitter"     : None,
-            "Telegram"    : None,
-            "IRC"         : None
+            "Twitter"        : None,
+            "TwitterRest"    : None,
+            "TwitterStreams" : None,
+            "Telegram"       : None,
+            "IRC"            : None
             }
 
         self.queues = {
-            "Main"        : queue.Queue(),
-            "TwitterRest" : queue.Queue(),
-            "Telegram"    : queue.Queue(),
-            "IRC"         : queue.Queue(),
+            "Main"           : queue.Queue(),
+            "Twitter"        : queue.Queue(),
+            "TwitterRest"    : queue.Queue(),
+            "TwitterStreams" : queue.Queue(),
+            "Telegram"       : queue.Queue(),
+            "IRC"            : queue.Queue(),
             }
 
         self.thread_states = { }
@@ -40,6 +44,9 @@ class Config:
         
 
     def send_message(self, recipient, message):
+        if (recipient not in self.queues):
+            print("send_message(): No such recipient: %s" % recipient)
+            return None
         self.queues[recipient].put(message)
 
 
