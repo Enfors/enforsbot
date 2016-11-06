@@ -98,6 +98,7 @@ class IRCThread(eb_thread.Thread, irc.IRCBot):
 
 
     def on_private_msg(self, msg):
+        self.debug_print("on_private_msg() called.", 2)
         message = eb_message.Message("IRC",
                                      eb_message.MSG_TYPE_USER_MESSAGE,
                                      { "user"     : msg.sender,
@@ -108,6 +109,8 @@ class IRCThread(eb_thread.Thread, irc.IRCBot):
 
             
     def on_channel_msg(self, msg):
+        self.debug_print("on_channel_msg() called.", 2)
+        
         global prev_msg_text
 
         match = re.search("^s/([^/]+)/([^/]*)/(g?)$",
@@ -122,13 +125,22 @@ class IRCThread(eb_thread.Thread, irc.IRCBot):
             prev_msg_text = msg.msg_text
 
     def on_join_msg(self, msg):
-        if msg.channel.lower != "#botymcbotface":
-            return None
+        self.debug_print("on_join_msg() called.", 2)
+
+        self.debug_print("Transformed channel: '%s'" %
+                         msg.channel.lower(), 3)
         
+        if msg.channel.lower() != "#botymcbotface":
+            return None
+
+        self.debug_print("Transformed sender: '%s'" %
+                         msg.sender.replace("@", "").lower(), 3)
         if (msg.sender.replace("@", "").lower() in [ "enfors",
                                                      "botymcbotface",
                                                      "botymctest",
                                                      "enforsbot"]):
+            if msg.sender.lower() != self.nickname.lower():
+                self.make_operator(msg.channel, msg.sender)
             return None
             
         message = eb_message.Message("IRC",
