@@ -14,7 +14,7 @@ consumer_secret = read_private("consumer_secret")
 access_token    = read_private("access_token")
 access_token_secret = read_private("access_token_secret")
 
-bot_screen_name = "EnforsBot"
+bot_screen_name = read_private("twitter_screen_name")
 
 class TwitterThread(eb_thread.Thread):
         
@@ -31,9 +31,9 @@ class TwitterThread(eb_thread.Thread):
                                              self.config)
         self.rest_thread.start()
         
-        #self.streams_thread = TwitterStreamsThread("TwitterStreams",
-        #                                           self.config)
-        #self.streams_thread.start()
+        self.streams_thread = TwitterStreamsThread("TwitterStreams",
+                                                   self.config)
+        self.streams_thread.start()
         
         message = eb_message.Message("Twitter", eb_message.MSG_TYPE_THREAD_STARTED)
         self.config.send_message("Main", message)
@@ -87,7 +87,7 @@ class TwitterStreamsThread(eb_thread.Thread):
         self.listener.set_config(config)
         self.stream = tweepy.Stream(auth = self.config.twitter_auth,
                                     listener = self.listener,
-                                    timeout = 30)
+                                    timeout = 2)
 
         
     def run(self):
@@ -101,20 +101,17 @@ class TwitterStreamsThread(eb_thread.Thread):
         
         while True:
             try:
+                message = self.config.recv_message("TwitterStreams",
+                                                   wait = False)
+                if message and \
+                   message.msg_type == eb_message.MSG_TYPE_STOP_THREAD:
+                    self.stop()
+                    return
+
                 if not streaming:
                     self.stream.userstream(async = False)
                     streaming = True
             
-                message = self.config.recv_message("TwitterStreams",
-                                                   wait = False)
-
-                if message and \
-                   message.msg_type == eb_message.MSG_TYPE_STOP_THREAD:
-                    print("Received stop command.")
-                    self.stop()
-                    return
-
-                print("Tick.")
                 time.sleep(1)
                     
             except AttributeError as err:
@@ -126,7 +123,9 @@ class TwitterStreamsThread(eb_thread.Thread):
             except OSError as err:
                 print("Twitter: OS exception handled: %s" % err)
             except Exception as err:
-                print("Twitter: Exception handled: %s" % err)
+                # This happens every time it times out (a lot, intentionally)
+                #print("Twitter: Exception handled: %s" % err)
+                pass
 
         
 
