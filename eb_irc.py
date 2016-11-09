@@ -135,10 +135,11 @@ class IRCThread(eb_thread.Thread, irc.IRCBot):
 
         self.debug_print("Transformed sender: '%s'" %
                          msg.sender.replace("@", "").lower(), 3)
-        if (msg.sender.replace("@", "").lower() in [ "enfors",
-                                                     "botymcbotface",
-                                                     "botymctest",
-                                                     "enforsbot"]):
+        if msg.sender.replace("@", "").lower() in [ "enfors",
+                                                    "botymcbotface",
+                                                    "botymctest",
+                                                    "enforsbot",
+                                                    "enforstestbot"]:
             if msg.sender.lower() != self.nickname.lower():
                 self.make_operator(msg.channel, msg.sender)
             return None
