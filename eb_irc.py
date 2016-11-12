@@ -16,7 +16,7 @@ class IRCThread(eb_thread.Thread, irc.IRCBot):
         self.password = self.config.read_private("irc_password")
 
         irc.IRCBot.__init__(self, self.nickname, self.password,
-                            debug_level = 1)
+                            debug_level = 0)
 
         
     def run(self):

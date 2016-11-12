@@ -87,7 +87,7 @@ class TwitterStreamsThread(eb_thread.Thread):
         self.listener.set_config(config)
         self.stream = tweepy.Stream(auth = self.config.twitter_auth,
                                     listener = self.listener,
-                                    timeout = 60)
+                                    timeout = 5)
 
         
     def run(self):
@@ -150,21 +150,19 @@ class TweepyStreamListener(tweepy.StreamListener):
 
 
     def on_direct_message(self, status):
-        global bot_screen_name
         
         text      = status.direct_message["text"]
         from_user = status.direct_message["sender"]["screen_name"]
-
-        print("TwitterStreams: Incoming message from %s: '%s' (%s)" %
-              (from_user, text, bot_screen_name))
 
         if text.startswith("LocationUpdate"):
             print("TwitterStreams: on_direct_message: LocationUpdate incoming")
             return self.on_location_update(from_user, text)
 
         if from_user.lower() == bot_screen_name.lower():
-            print("TwitterStreams: Ignoring my own message: %s" % text)
             return True
+
+        print("TwitterStreams: Incoming message from %s: '%s' (%s)" %
+              (from_user, text, bot_screen_name))
 
         self.send_user_message_to_main(from_user, text)
         
