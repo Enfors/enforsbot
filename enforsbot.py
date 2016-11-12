@@ -72,7 +72,7 @@ class EnforsBot:
             while True:
                 message = self.config.recv_message("Main")
 
-                #print("Main: Incoming message from thread %s..." % message.sender)
+                print("Main: Incoming message from thread %s..." % message.sender)
             
                 if message.msg_type == eb_message.MSG_TYPE_THREAD_STARTED:
                     print("Thread started: %s" % message.sender)
@@ -208,6 +208,8 @@ class EnforsBot:
         location = message.data["location"]
         arrived  = message.data["arrived"]
 
+        print("Updating location: [%s:%s]" % (location, str(arrived)))
+        
         with self.config.lock, self.db:
 
             cur = self.db.cursor()
