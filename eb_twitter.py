@@ -87,7 +87,7 @@ class TwitterStreamsThread(eb_thread.Thread):
         self.listener.set_config(config)
         self.stream = tweepy.Stream(auth = self.config.twitter_auth,
                                     listener = self.listener,
-                                    timeout = 2)
+                                    timeout = 60)
 
         
     def run(self):
@@ -124,7 +124,7 @@ class TwitterStreamsThread(eb_thread.Thread):
                 print("Twitter: OS exception handled: %s" % err)
             except Exception as err:
                 # This happens every time it times out (a lot, intentionally)
-                #print("Twitter: Exception handled: %s" % err)
+                print("Twitter: Exception handled: %s" % err)
                 pass
 
         
@@ -150,20 +150,21 @@ class TweepyStreamListener(tweepy.StreamListener):
 
 
     def on_direct_message(self, status):
+        global bot_screen_name
+        
         text      = status.direct_message["text"]
         from_user = status.direct_message["sender"]["screen_name"]
 
-        #print("TwitterStreams: Incoming message from %s: '%s'" %
-        #      (from_user, text))
+        print("TwitterStreams: Incoming message from %s: '%s' (%s)" %
+              (from_user, text, bot_screen_name))
 
         if text.startswith("LocationUpdate"):
-            #print("TwitterStreams: on_direct_message: LocationUpdate incoming")
+            print("TwitterStreams: on_direct_message: LocationUpdate incoming")
             return self.on_location_update(from_user, text)
 
-        if from_user == bot_screen_name:
-            #print("TwitterStreams: Ignoring my own message: %s" % text)
+        if from_user.lower() == bot_screen_name.lower():
+            print("TwitterStreams: Ignoring my own message: %s" % text)
             return True
-
 
         self.send_user_message_to_main(from_user, text)
         
@@ -172,10 +173,12 @@ class TweepyStreamListener(tweepy.StreamListener):
     
 
     def on_location_update(self, from_user, text):
+        global bot_screen_name
+        
         if from_user != bot_screen_name and from_user != "Enfors":
             return False
 
-        #print("on_location_update: text='%s', '%s'" % (text, text.replace("LocationUpdate ", "")))
+        print("on_location_update: text='%s', '%s'" % (text, text.replace("LocationUpdate ", "")))
 
         (location, arrived) = text.replace("LocationUpdate ", "").split(":")
         
