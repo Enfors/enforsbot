@@ -87,11 +87,12 @@ class TwitterStreamsThread(eb_thread.Thread):
         self.listener.set_config(config)
         self.stream = tweepy.Stream(auth = self.config.twitter_auth,
                                     listener = self.listener,
-                                    timeout = 5)
+                                    timeout = 60)
 
         
     def run(self):
         super().run()
+        last_err = None
         message = eb_message.Message("TwitterStreams",
                                      eb_message.MSG_TYPE_THREAD_STARTED)
         self.config.send_message("Main", message)
@@ -125,6 +126,7 @@ class TwitterStreamsThread(eb_thread.Thread):
             except Exception as err:
                 # This happens every time it times out (a lot, intentionally)
                 print("Twitter: Exception handled: %s" % err)
+                last_err = err
                 pass
 
         
