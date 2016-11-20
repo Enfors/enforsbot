@@ -146,6 +146,7 @@ class TweepyStreamListener(tweepy.StreamListener):
     "Needed by TwitterStreamsThread."
 
     def __init__(self):
+        super().__init__()
         self.config = None
 
     def set_config(self, config):
