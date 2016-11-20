@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
 "enforsbot.py by Christer Enfors (c) 2015, 2016"
+from __future__ import print_function
 
+import datetime
+import re
+import socket
+import subprocess
+import sqlite3
 
-import eb_config, eb_message, eb_twitter, eb_telegram
+import eb_config
+import eb_message
+import eb_twitter
+import eb_telegram
 import eb_irc
-import datetime, re, socket, subprocess, sqlite3
 
 #twitter_thread = eb_twitter.TwitterThread()
 
@@ -163,7 +171,8 @@ class EnforsBot(object):
 
         #print("Main: Message from %s: '%s'" % (user, text))
 
-        response = "I'm afraid I don't understand."
+        used_response = None
+        default_response = "I'm afraid I don't understand."
 
         # If this is an IRC message:
         if response_thread == "IRC":
@@ -181,21 +190,24 @@ class EnforsBot(object):
 
         text = text.lower()
 
-        for pattern in self.responses.keys():
+        for pattern, response in self.responses.items():
             pat = re.compile(pattern)
 
             if pat.match(text):
-                response = self.responses[pattern]
+                used_response = response
 
-                if callable(response):
-                    response = response(text)
+                if callable(used_response):
+                    used_response = used_response(text)
 
-        response = response.strip() + "\n"
-        if response is not None:
+        if used_response is None:
+            used_response = default_response
+
+        used_response = used_response.strip() + "\n"
+        if used_response is not None:
             message = eb_message.Message("Main",
                                          eb_message.MSG_TYPE_USER_MESSAGE,
                                          {"user" : user,
-                                          "text" : response})
+                                          "text" : used_response})
             self.config.send_message(response_thread, message)
 
 
@@ -212,6 +224,7 @@ class EnforsBot(object):
 
 
     def handle_incoming_location_update(self, message):
+        "Handle incoming request for our location."
         user = "Enfors" # Hardcoded for now. Sue me.
         location = message.data["location"]
         arrived = message.data["arrived"]
@@ -239,7 +252,7 @@ class EnforsBot(object):
                 # If leaving the location I'm currently at (sometimes
                 # the "left source" message arrives AFTER "arrived at
                 # destination" message), skipping those.
-                if self.arrived == False or location == self.location:
+                if self.arrived is False or location == self.location:
 
                     cur.execute("insert into LOCATION_HISTORY "
                                 "(user, location, event, time) values "
@@ -281,7 +294,7 @@ class EnforsBot(object):
 
             try:
                 (user, location, event, timestamp) = cur.fetchone()
-            except TypeError as error:
+            except TypeError:
                 return "I have no information on that."
 
             if event == "arrived":
@@ -321,12 +334,12 @@ class EnforsBot(object):
             return "SysCond is not installed on this host."
 
 
-    def get_datetime_diff_string(self, d1, d2):
-        "Return the diff between to datetimes, in short format."
-        if d1 > d2:
+    def get_datetime_diff_string(self, date1, date2):
+        "Return the diff between two datetimes, in short format."
+        if date1 > date2:
             return "in the future"
 
-        diff = d2 - d1
+        diff = date2 - date1
 
         total_seconds = diff.total_seconds()
 
