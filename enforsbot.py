@@ -83,9 +83,6 @@ class EnforsBot(object):
             while True:
                 message = self.config.recv_message("Main")
 
-                print("Main: Incoming message from thread %s..." % \
-                      message.sender)
-
                 if message.msg_type == \
                    eb_message.MSG_TYPE_THREAD_STARTED:
                     print("Thread started: %s" % message.sender)
@@ -179,7 +176,7 @@ class EnforsBot(object):
             protocol = "Twitter"
         user = self.user_handler.find_user_by_identifier(protocol,
                                                          user_name)
-        used_response = None
+        response = None
         default_response = "I'm afraid I don't understand."
 
         # If this is an IRC message:
@@ -192,46 +189,42 @@ class EnforsBot(object):
                channel.lower() != "enforstestbot":
                 return None
 
-            # We should't try to respond to NickServ.
-            if user_name.lower() == "nickserv":
-                return None
-
         text = text.lower()
         if user and user.activity:
             status = user.activity.handle_text(text)
-            used_response = status.output
+            response = status.output
             if status.done:
                 user.activity = None
         elif text == "multi":
             if not user:
-                used_response = "I'm sorry, I can't let you do that."
+                response = "I'm sorry, I can't let you do that."
             else:
                 user.activity = eb_math.MathDrill(user)
                 status = user.activity.start(text)
                 if status.done:
                     user.activity = None
-                used_response = status.output
+                response = status.output
         else:
-            for pattern, response in self.responses.items():
+            for pattern, pattern_response in self.responses.items():
                 pat = re.compile(pattern)
 
                 if pat.match(text):
-                    used_response = response
+                    response = pattern_response
 
-                    if callable(used_response):
-                        used_response = used_response(text)
+                    if callable(response):
+                        response = response(text)
 
-            if used_response is None:
-                used_response = default_response
+            if response is None:
+                response = default_response
 
-            used_response = used_response.strip() + "\n"
+            response = response.strip() + "\n"
 
-        if used_response is not None:
-            print("  - Response: %s" % used_response.replace("\n", " "))
+        if response is not None:
+            print("  - Response: %s" % response.replace("\n", " "))
             message = eb_message.Message("Main",
                                          eb_message.MSG_TYPE_USER_MESSAGE,
                                          {"user" : user_name,
-                                          "text" : used_response})
+                                          "text" : response})
             self.config.send_message(response_thread, message)
 
 
