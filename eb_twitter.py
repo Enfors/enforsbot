@@ -219,6 +219,6 @@ class TweepyStreamListener(tweepy.StreamListener):
 
     def on_error(self, status_code):
         "What to do on error."
-        print("ERROR!!")
+        print("Twitter error: %d" % status_code)
         if status_code == 420:
             return False
