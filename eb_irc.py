@@ -59,47 +59,11 @@ class IRCThread(eb_thread.Thread, irc.IRCBot):
             if msg:
                 self.log_irc_msg(msg)
 
-
-    # def handle_irc_message(self, msg):
-        
-    #     self.log_irc_message(msg)
-
-    #     if (msg.msg_type == "PRIVMSG" and msg.channel == self.nickname):
-    #         self.handle_private_message(msg)
-    #         self.debug_print("Private message: %s->%s: %s" % (msg.sender,
-    #                                                           msg.channel,
-    #                                                           msg.msg_text),
-    #                              1)
-            
-    #         print("IRC: Incoming message from %s: '%s'" %
-    #               (msg.sender, msg.msg_text))
-
-    #     if (msg.msg_type == "PRIVMSG" and msg.channel != self.nickname):
-    #         self.debug_print("Channel message: %s @ %s: %s" % (msg.sender,
-    #                                                            msg.channel,
-    #                                                            msg.msg_text),
-    #                              1)
-    #         self.handle_channel_message(msg)
-            
-    #     if (msg.msg_type == "JOIN" and
-    #         msg.channel.lower() == "#botymcbotface"):
-
-    #         if (msg.sender.replace("@", "").lower() in [ "enfors",
-    #                                                      "botymcbotface",
-    #                                                      "botymctest",
-    #                                                      "enforsbot"]):
-    #             return None
-            
-    #         message = eb_message.Message("IRC",
-    #                                      eb_message.MSG_TYPE_NOTIFY_USER,
-    #                                      { "user": "enfors",
-    #                                        "text": "We have a visitor in " \
-    #                                        "#BotyMcBotface: %s." % msg.sender})
-    #         self.config.send_message("Main", message)
-
-
     def on_private_msg(self, msg):
         self.debug_print("on_private_msg() called.", 2)
+        # We don't need to respond to nickserv.
+        if msg.sender.lower() == "nickserv":
+            return None
         message = eb_message.Message("IRC",
                                      eb_message.MSG_TYPE_USER_MESSAGE,
                                      { "user"     : msg.sender,
