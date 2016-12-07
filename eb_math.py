@@ -14,9 +14,10 @@ class MathDrill(eb_activity.Activity):
         self.name = "MathDrill"
         math_user = math_engine.User(user.name)
         self.drill = math_engine.MultiplicationDrill(math_user,
-                                                     starting_limit=5)
+                                                     starting_limit=6,
+                                                     num_questions=10)
 
-    def start(self, text):
+    def start(self, text): # pylint: disable=unused-argument
         "Start the activity."
         return self.drill.start()
 
