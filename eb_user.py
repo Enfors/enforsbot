@@ -11,11 +11,19 @@ class User(object):
         self.name = name
         self.password = password
         self.protocols = protocols
+        self.activity = None
 
     def identify(self, name, password=None):
         "Called when the user manually identifies themselves."
         self.name = name.lower()
         self.password = password
+
+    def find_identifier_by_protocol(self, protocol):
+        "Given a protocol, return the identifier."
+        try:
+            return self.protocols[protocol]["identifier"]
+        except KeyError:
+            return None
 
     def add_protocol(self, protocol, identifier):
         """
@@ -45,7 +53,7 @@ class UserHandler(object):
         enfors = User("Enfors", protocols={"Twitter":
                                            {"identifier": "Enfors"},
                                            "Telegram":
-                                           {"identifier": "ChristerE"},
+                                           {"identifier": "167773515"},
                                            "IRC":
                                            {"identifier": "Enfors"}})
         indra = User("Indra", protocols={"Twitter":
@@ -55,7 +63,7 @@ class UserHandler(object):
     def find_user_by_identifier(self, protocol, identifier):
         "Given a protocol and identifier, find and return a user."
 
-        identifier = identifier
+        identifier = str(identifier)
 
         for user in self.users:
             try:

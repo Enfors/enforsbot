@@ -9,10 +9,12 @@ import subprocess
 import sqlite3
 
 import eb_config
-import eb_message
-import eb_twitter
-import eb_telegram
 import eb_irc
+import eb_math
+import eb_message
+import eb_telegram
+import eb_twitter
+import eb_user
 
 #twitter_thread = eb_twitter.TwitterThread()
 
@@ -24,6 +26,7 @@ class EnforsBot(object):
 
     def __init__(self):
         self.config = eb_config.Config()
+        self.user_handler = eb_user.UserHandler()
 
         # Responses are regexps.
         self.responses = {
@@ -165,12 +168,17 @@ class EnforsBot(object):
 
 
     def handle_incoming_user_message(self, message, response_thread):
-        "Hande an incoming message of type USER."
-        user = message.data["user"]
+        "Handle an incoming message of type USER."
+        user_name = message.data["user"]
         text = message.data["text"]
 
-        #print("Main: Message from %s: '%s'" % (user, text))
+        print("Main: Message from %s: '%s'" % (user_name, text))
 
+        protocol = response_thread
+        if protocol.startswith("Twitter"):
+            protocol = "Twitter"
+        user = self.user_handler.find_user_by_identifier(protocol,
+                                                         user_name)
         used_response = None
         default_response = "I'm afraid I don't understand."
 
@@ -185,28 +193,44 @@ class EnforsBot(object):
                 return None
 
             # We should't try to respond to NickServ.
-            if user.lower() == "nickserv":
+            if user_name.lower() == "nickserv":
                 return None
 
         text = text.lower()
+        if user and user.activity:
+            status = user.activity.handle_text(text)
+            used_response = status.output
+            if status.done:
+                user.activity = None
+        elif text == "multi":
+            if not user:
+                used_response = "I'm sorry, I can't let you do that."
+            else:
+                user.activity = eb_math.MathDrill(user)
+                status = user.activity.start(text)
+                if status.done:
+                    user.activity = None
+                used_response = status.output
+        else:
+            for pattern, response in self.responses.items():
+                pat = re.compile(pattern)
 
-        for pattern, response in self.responses.items():
-            pat = re.compile(pattern)
+                if pat.match(text):
+                    used_response = response
 
-            if pat.match(text):
-                used_response = response
+                    if callable(used_response):
+                        used_response = used_response(text)
 
-                if callable(used_response):
-                    used_response = used_response(text)
+            if used_response is None:
+                used_response = default_response
 
-        if used_response is None:
-            used_response = default_response
+            used_response = used_response.strip() + "\n"
 
-        used_response = used_response.strip() + "\n"
         if used_response is not None:
+            print("  - Response: %s" % used_response.replace("\n", " "))
             message = eb_message.Message("Main",
                                          eb_message.MSG_TYPE_USER_MESSAGE,
-                                         {"user" : user,
+                                         {"user" : user_name,
                                           "text" : used_response})
             self.config.send_message(response_thread, message)
 

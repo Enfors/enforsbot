@@ -59,8 +59,8 @@ class TelegramThread(eb_thread.Thread):
             if text.lower().startswith("@enfors_bot "):
                 text = text[12:]
             
-            print("Telegram: Incoming message from %s: '%s'" %
-                  (msg["from"]["first_name"], text))
+            print("Telegram: Incoming message from %s(%d): '%s'" %
+                  (msg["from"]["first_name"], user, text))
 
             # If this is a kind of message only Telegram can handle
             # (inline keyboards, etc), then don't send it to the
