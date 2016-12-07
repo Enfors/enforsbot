@@ -26,6 +26,7 @@ class IRCThread(eb_thread.Thread, irc.IRCBot):
                                   detect_types = sqlite3.PARSE_DECLTYPES)
 
         self.connect("irc.freenode.net", "#Enfors")
+        self.join_channel("#Enfors")
 
         message = eb_message.Message("IRC",
                                      eb_message.MSG_TYPE_THREAD_STARTED)
