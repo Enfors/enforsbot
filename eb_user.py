@@ -11,7 +11,7 @@ class User(object):
         self.name = name
         self.password = password
         self.protocols = protocols
-        self.activity = None
+        self.activities = []
 
     def identify(self, name, password=None):
         "Called when the user manually identifies themselves."
@@ -34,6 +34,23 @@ class User(object):
         """
         self.protocols[protocol]["identifier"] = identifier
 
+    def push_activity(self, activity):
+        "Add an activity to the top of the stack."
+        self.activities.append(activity)
+
+    def pop_activity(self):
+        "Remove and return the activity at the top of the stack."
+        if len(self.activities) < 1:
+            return None
+        return self.activities.pop()
+
+    def current_activity(self):
+        "Return the current (read: topmost) activity on the stack."
+        if len(self.activities) < 1:
+            return None
+        else:
+            return self.activities[-1]
+
     def __repr__(self):
         output = "User: %s\n- Protocols:" % self.name
         for protocol in self.protocols.keys():
@@ -49,15 +66,18 @@ class User(object):
 class UserHandler(object):
     "Keep track of all users."
 
-    def __init__(self):
-        enfors = User("Enfors", protocols={"Twitter":
-                                           {"identifier": "Enfors"},
-                                           "Telegram":
-                                           {"identifier": "167773515"},
-                                           "IRC":
-                                           {"identifier": "Enfors"}})
-        indra = User("Indra", protocols={"Twitter":
-                                         {"identifier": "IndraEnfors"}})
+    def __init__(self, config):
+        self.config = config
+        enfors = User("Enfors", self.config,
+                      protocols={"Twitter":
+                                 {"identifier": "Enfors"},
+                                 "Telegram":
+                                 {"identifier": "167773515"},
+                                 "IRC":
+                                 {"identifier": "Enfors"}})
+        indra = User("Indra", self.config,
+                     protocols={"Twitter":
+                                {"identifier": "IndraEnfors"}})
         self.users = [enfors, indra]
 
     def find_user_by_identifier(self, protocol, identifier):
