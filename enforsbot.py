@@ -63,6 +63,10 @@ class EnforsBot(object):
             "IRC"            : "IRC"
         }
 
+        self.activity_cmds = {
+            "multi"          : self.start_multi,
+            }
+
         self.location = None
         self.arrived = False
 
@@ -191,29 +195,10 @@ class EnforsBot(object):
                 return None
 
         text = text.lower()
-        if user and user.current_activity():
-            activity = user.current_activity()
-
-            status = activity.handle_text(text)
-            response = status.output
-            if status.done:
-                user.pop_activity()
-                if status.result:
-                    print("Result: %s" % status.result)
-        elif text == "multi":
-            activity = eb_math.MathDrill(user)
-            user.push_activity(activity)
-            status = activity.start(text)
-            if status.done:
-                user.pop_activity()
-            response = status.output
-        elif text == "select":
-            activity = eb_activity.AskYesOrNoActivity()
-            user.push_activity(activity)
-            status = activity.start(text)
-            if status.done:
-                user.pop_activity()
-            response = status.output
+        if text in self.activity_cmds.keys():
+            response = self.start_activity(user, text)
+        elif user and user.current_activity():
+            response = self.handle_activity(user, text)
         else:
             for pattern, pattern_response in self.responses.items():
                 pat = re.compile(pattern)
@@ -236,6 +221,43 @@ class EnforsBot(object):
                                          {"user" : user_name,
                                           "text" : response})
             self.config.send_message(response_thread, message)
+
+
+    def start_activity(self, user, text):
+        """Check if text is a command to start an activity, and if so,
+        start it. Return anything that should be sent to the user."""
+        text = text.strip().lower()
+
+        if text in self.activity_cmds.keys():
+            status = self.activity_cmds[text](user, text)
+            if status.done:
+                user.pop_activity()
+            if status.output:
+                return status.output
+            else:
+                return ""
+        else:
+            return False
+
+    def handle_activity(self, user, text):
+        """Send user input to ongoing activity."""
+        activity = user.current_activity()
+        if not activity:
+            return False
+
+        status = activity.handle_text(text)
+        if status.done:
+            user.pop_activity()
+        if status.output:
+            return status.output
+        else:
+            return ""
+
+    def start_multi(self, user, text):
+        """Start multiplication practice activity."""
+        activity = eb_math.MathDrill(user)
+        user.push_activity(activity)
+        return activity.start(text)
 
 
     def respond_ip(self, message):
