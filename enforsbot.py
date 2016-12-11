@@ -8,6 +8,7 @@ import socket
 import subprocess
 import sqlite3
 
+import eb_activity
 import eb_config
 import eb_irc
 import eb_math
@@ -26,7 +27,7 @@ class EnforsBot(object):
 
     def __init__(self):
         self.config = eb_config.Config()
-        self.user_handler = eb_user.UserHandler()
+        self.user_handler = eb_user.UserHandler(self.config)
 
         # Responses are regexps.
         self.responses = {
@@ -190,20 +191,29 @@ class EnforsBot(object):
                 return None
 
         text = text.lower()
-        if user and user.activity:
-            status = user.activity.handle_text(text)
+        if user and user.current_activity():
+            activity = user.current_activity()
+
+            status = activity.handle_text(text)
             response = status.output
             if status.done:
-                user.activity = None
+                user.pop_activity()
+                if status.result:
+                    print("Result: %s" % status.result)
         elif text == "multi":
-            if not user:
-                response = "I'm sorry, I can't let you do that."
-            else:
-                user.activity = eb_math.MathDrill(user)
-                status = user.activity.start(text)
-                if status.done:
-                    user.activity = None
-                response = status.output
+            activity = eb_math.MathDrill(user)
+            user.push_activity(activity)
+            status = activity.start(text)
+            if status.done:
+                user.pop_activity()
+            response = status.output
+        elif text == "select":
+            activity = eb_activity.AskYesOrNoActivity()
+            user.push_activity(activity)
+            status = activity.start(text)
+            if status.done:
+                user.pop_activity()
+            response = status.output
         else:
             for pattern, pattern_response in self.responses.items():
                 pat = re.compile(pattern)
