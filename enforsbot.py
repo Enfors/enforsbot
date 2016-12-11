@@ -195,7 +195,9 @@ class EnforsBot(object):
                 return None
 
         text = text.lower()
-        if text in self.activity_cmds.keys():
+        if user and user.name is None and not user.current_activity():
+            response = self.start_ask_user_name(user, text)
+        elif text in self.activity_cmds.keys():
             response = self.start_activity(user, text)
         elif user and user.current_activity():
             response = self.handle_activity(user, text)
@@ -252,6 +254,13 @@ class EnforsBot(object):
             return status.output
         else:
             return ""
+
+    def start_ask_user_name(self, user, text):
+        """Ask the user for their name."""
+        activity = eb_activity.AskUserNameActivity(user)
+        user.push_activity(activity)
+        status = activity.start(text)
+        return status.output
 
     def start_multi(self, user, text):
         """Start multiplication practice activity."""

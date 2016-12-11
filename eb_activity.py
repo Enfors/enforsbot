@@ -9,8 +9,8 @@ from __future__ import print_function
 class Activity(object):
     "An activity - interaction between user and bot that spans multiple messages."
 
-    def __init__(self):
-        pass
+    def __init__(self, user):
+        self.user = user
 
     def handle_text(self, text): # pylint: disable=unused-argument,no-self-use
         "Handle text from a user. This function must be overridden."
@@ -23,8 +23,8 @@ class StateActivity(Activity):
     """An activity which keeps track of which function to call the next time
     it gets input."""
 
-    def __init__(self):
-        super(StateActivity, self).__init__()
+    def __init__(self, user):
+        super(StateActivity, self).__init__(user)
 
         self.state = self.start # state = function to call on input.
 
@@ -47,8 +47,8 @@ class SelectOneActivity(StateActivity):
     """Have the user select one of a specific range of strings. Useful for menus
     or "please answer yes or no" type situations."""
 
-    def __init__(self, choices, prompt=None, retry_prompt=None):
-        super(SelectOneActivity, self).__init__()
+    def __init__(self, user, choices, prompt=None, retry_prompt=None):
+        super(SelectOneActivity, self).__init__(user)
 
         self.choices = choices
         if prompt:
@@ -78,16 +78,34 @@ class SelectOneActivity(StateActivity):
 
 class AskYesOrNoActivity(SelectOneActivity):
     """Only accept a "yes" or a "no"."""
-    def __init__(self, prompt=None, retry_prompt=None):
-        super(AskYesOrNoActivity, self).__init__(["yes", "no"],
+    def __init__(self, user, prompt=None, retry_prompt=None):
+        super(AskYesOrNoActivity, self).__init__(user,
+                                                 ["yes", "no"],
                                                  prompt,
                                                  retry_prompt)
 
 
 
-class AskStringActivity(Activity):
+class AskStringActivity(StateActivity):
     """Accept any non-emtpy string."""
-    pass
+
+    def __init__(self, user, prompt):
+        super(AskStringActivity, self).__init__(user)
+        self.prompt = prompt
+
+    def start(self, text):
+        self.state = self.validate_choice
+        print("(state set to validate)")
+        return ActivityStatus(output=self.prompt)
+
+    def validate_choice(self, text):
+        "Make sure the string isn't empty."
+        if len(text):
+            return ActivityStatus(output="Thanks.",
+                                  result=text,
+                                  done=True)
+        else:
+            return ActivityStatus(output="Please write something.")
 
 
 
@@ -103,4 +121,25 @@ class ActivityStatus(object):
         self.output = output
         self.result = result
         self.done = done
+
+
+#
+# NON-BASE CLASSES
+#
+
+class AskUserNameActivity(AskStringActivity):
+    "Ask a user for their name."
+    def __init__(self, user):
+        super(AskUserNameActivity, self).__init__(user,
+                                                  "Hello there! "
+                                                  "I don't believe we've met. "
+                                                  "What's your name?")
+
+    def validate_choice(self, text):
+        status = super(AskUserNameActivity, self).validate_choice(text)
+        if status.done:
+            name = status.result.title()
+            status.output = "Nice to meet you, %s." % name
+            self.user.name = name
+        return status
 

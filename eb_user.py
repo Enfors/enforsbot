@@ -7,7 +7,8 @@ from __future__ import print_function
 class User(object):
     "Keep track of the same human across multiple protocols."
 
-    def __init__(self, name=None, password=None, protocols={}):
+    def __init__(self, config, name=None, password=None, protocols={}):
+        self.config = config
         self.name = name
         self.password = password
         self.protocols = protocols
@@ -68,7 +69,7 @@ class UserHandler(object):
 
     def __init__(self, config):
         self.config = config
-        enfors = User("Enfors", self.config,
+        enfors = User(config=self.config,
                       protocols={"Twitter":
                                  {"identifier": "Enfors"},
                                  "Telegram":
