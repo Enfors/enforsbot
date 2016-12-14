@@ -100,6 +100,10 @@ class AskStringActivity(StateActivity):
 
     def validate_choice(self, text):
         "Make sure the string isn't empty."
+
+        # pylint: disable=no-self-use
+        # This is meant to be inherited by something that might use self.
+
         if len(text):
             return ActivityStatus(output="Thanks.",
                                   result=text,
@@ -139,7 +143,8 @@ class AskUserNameActivity(AskStringActivity):
         status = super(AskUserNameActivity, self).validate_choice(text)
         if status.done:
             name = status.result.title()
-            status.output = "Nice to meet you, %s." % name
+            status.output = "Nice to meet you, %s. " \
+                            "What can I do for you?" % name
             self.user.name = name
         return status
 
