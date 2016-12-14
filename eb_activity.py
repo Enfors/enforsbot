@@ -12,6 +12,9 @@ class Activity(object):
     def __init__(self, user):
         self.user = user
 
+    def __repr__(self):
+        return "Activity (base object)"
+
     def handle_text(self, text): # pylint: disable=unused-argument,no-self-use
         "Handle text from a user. This function must be overridden."
         print("Activity.handle_text(): Unimplemented")
@@ -27,6 +30,9 @@ class StateActivity(Activity):
         super(StateActivity, self).__init__(user)
 
         self.state = self.start # state = function to call on input.
+
+    def __repr__(self):
+        return "StateActivity (state='%s')" % self.state
 
     def start(self, text): # pylint: disable=no-self-use,unused-argument
         "The default state function. Should be overridden."
@@ -61,6 +67,9 @@ class SelectOneActivity(StateActivity):
         else:
             self.retry_prompt = self.prompt
 
+    def __repr__(self):
+        return "SelectOneActivity (prompt='%s')" % self.prompt
+
     def start(self, text):
         self.state = self.validate_choice
         return ActivityStatus(output=self.prompt)
@@ -84,6 +93,9 @@ class AskYesOrNoActivity(SelectOneActivity):
                                                  prompt,
                                                  retry_prompt)
 
+    def __repr__(self):
+        return "AskYesOrNoActivity (prompt='%s')" % self.prompt
+
 
 
 class AskStringActivity(StateActivity):
@@ -92,6 +104,9 @@ class AskStringActivity(StateActivity):
     def __init__(self, user, prompt):
         super(AskStringActivity, self).__init__(user)
         self.prompt = prompt
+
+    def __repr__(self):
+        return "AskStringActivity (prompt='%s')" % self.prompt
 
     def start(self, text):
         self.state = self.validate_choice
@@ -115,7 +130,8 @@ class AskStringActivity(StateActivity):
 
 class AskIntActivity(Activity):
     """Only accept strings that can be converted to int."""
-    pass
+    def __repr__(self):
+        return "AskIntActivity"
 
 
 class ActivityStatus(object):
@@ -126,6 +142,9 @@ class ActivityStatus(object):
         self.result = result
         self.done = done
 
+    def __repr__(self):
+        return "ActivityStatus (output='%s', result='%s', done='%s')" %\
+            (str(self.output), str(self.result), str(self.done))
 
 #
 # NON-BASE CLASSES
