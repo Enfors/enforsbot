@@ -25,6 +25,9 @@ SYSCOND_DIR = "/home/enfors/syscond"
 class EnforsBot(object):
     "The main class of the application."
 
+    # pylint: disable=too-many-instance-attributes
+    # I see no problem with them.
+
     def __init__(self):
         self.config = eb_config.Config()
         self.user_handler = eb_user.UserHandler(self.config)
@@ -241,7 +244,8 @@ class EnforsBot(object):
         else:
             return False
 
-    def handle_activity(self, user, text):
+    @staticmethod
+    def handle_activity(user, text):
         """Send user input to ongoing activity."""
         activity = user.current_activity()
         if not activity:
@@ -255,21 +259,24 @@ class EnforsBot(object):
         else:
             return ""
 
-    def start_ask_user_name(self, user, text):
+    @staticmethod
+    def start_ask_user_name(user, text):
         """Ask the user for their name."""
         activity = eb_activity.AskUserNameActivity(user)
         user.push_activity(activity)
         status = activity.start(text)
         return status.output
 
-    def start_multi(self, user, text):
+    @staticmethod
+    def start_multi(user, text):
         """Start multiplication practice activity."""
         activity = eb_math.MathDrill(user)
         user.push_activity(activity)
         return activity.start(text)
 
 
-    def respond_ip(self, message):
+    @staticmethod
+    def respond_ip(message):
         "Return our local IP address."
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.connect(("gmail.com", 80)) # I'm abusing gmail.
