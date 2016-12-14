@@ -184,7 +184,7 @@ class EnforsBot(object):
             protocol = "Twitter"
         user = self.user_handler.find_user_by_identifier(protocol,
                                                          user_name)
-        response = None
+        response = ""
         default_response = "I'm afraid I don't understand."
 
         # If this is an IRC message:
@@ -198,12 +198,23 @@ class EnforsBot(object):
                 return None
 
         text = text.lower()
+        # If this is a command to start an activity:
+        if text in self.activity_cmds.keys():
+            self.start_activity(user, text)
+
+        # If we don't have a name for the user, then insert
+        # a question about the user's name.
         if user and user.name is None and not user.current_activity():
-            response = self.start_ask_user_name(user, text)
-        elif text in self.activity_cmds.keys():
-            response = self.start_activity(user, text)
-        elif user and user.current_activity():
-            response = self.handle_activity(user, text)
+            self.start_ask_user_name(user, text)
+
+        # Handle any activities that are currently going on
+        if user and user.current_activity():
+            repeat = True
+            while repeat:
+                status = self.handle_activity(user, text)
+                response += status.output + " "
+                repeat = status.done and user.current_activity()
+
         else:
             for pattern, pattern_response in self.responses.items():
                 pat = re.compile(pattern)
@@ -214,7 +225,7 @@ class EnforsBot(object):
                     if callable(response):
                         response = response(text)
 
-            if response is None:
+            if response is "":
                 response = default_response
 
             response = response.strip() + "\n"
@@ -230,17 +241,12 @@ class EnforsBot(object):
 
     def start_activity(self, user, text):
         """Check if text is a command to start an activity, and if so,
-        start it. Return anything that should be sent to the user."""
+        start it. Return True if started, otherwise False."""
         text = text.strip().lower()
 
         if text in self.activity_cmds.keys():
-            status = self.activity_cmds[text](user, text)
-            if status.done:
-                user.pop_activity()
-            if status.output:
-                return status.output
-            else:
-                return ""
+            self.activity_cmds[text](user, text)
+            return True
         else:
             return False
 
@@ -249,30 +255,25 @@ class EnforsBot(object):
         """Send user input to ongoing activity."""
         activity = user.current_activity()
         if not activity:
-            return False
+            return None
 
         status = activity.handle_text(text)
         if status.done:
-            user.pop_activity()
-        if status.output:
-            return status.output
-        else:
-            return ""
+            user.remove_activity()
+        return status
 
     @staticmethod
     def start_ask_user_name(user, text):
         """Ask the user for their name."""
         activity = eb_activity.AskUserNameActivity(user)
-        user.push_activity(activity)
-        status = activity.start(text)
-        return status.output
+        user.insert_activity(activity)
 
     @staticmethod
     def start_multi(user, text):
         """Start multiplication practice activity."""
         activity = eb_math.MathDrill(user)
         user.push_activity(activity)
-        return activity.start(text)
+        return True
 
 
     @staticmethod

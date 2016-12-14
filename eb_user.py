@@ -35,22 +35,34 @@ class User(object):
         """
         self.protocols[protocol]["identifier"] = identifier
 
+    def insert_activity(self, activity):
+        "Add an activity to the start of the queue."
+        self.activities.insert(0, activity)
+
     def push_activity(self, activity):
-        "Add an activity to the top of the stack."
+        "Add an activity to the end of the queue."
         self.activities.append(activity)
 
+    def remove_activity(self):
+        "Remove and return the first activity on the queue."
+        if len(self.activities) < 1:
+            return None
+        activity = self.activities[0]
+        del self.activities[0]
+        return activity
+
     def pop_activity(self):
-        "Remove and return the activity at the top of the stack."
+        "Remove and return the activity at the end of the list."
         if len(self.activities) < 1:
             return None
         return self.activities.pop()
 
     def current_activity(self):
-        "Return the current (read: topmost) activity on the stack."
+        "Return the current (read: first) activity on the queue."
         if len(self.activities) < 1:
             return None
         else:
-            return self.activities[-1]
+            return self.activities[0]
 
     def __repr__(self):
         output = "User: %s\n- Protocols:" % self.name

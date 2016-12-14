@@ -110,7 +110,6 @@ class AskStringActivity(StateActivity):
 
     def start(self, text):
         self.state = self.validate_choice
-        print("(state set to validate)")
         return ActivityStatus(output=self.prompt)
 
     def validate_choice(self, text):
@@ -162,8 +161,7 @@ class AskUserNameActivity(AskStringActivity):
         status = super(AskUserNameActivity, self).validate_choice(text)
         if status.done:
             name = status.result.title()
-            status.output = "Nice to meet you, %s. " \
-                            "What can I do for you?" % name
+            status.output = "Nice to meet you, %s. " % name
             self.user.name = name
         return status
 
