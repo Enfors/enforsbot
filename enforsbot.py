@@ -50,6 +50,9 @@ class EnforsBot(object):
             "locate"             : self.respond_location,
             "syscond"            : self.respond_syscond,
             "status"             : self.respond_status,
+            "lights out"         : self.respond_lights_off,
+            "lights off"         : self.respond_lights_off,
+            "lignts on"          : self.respond_lights_on,
         }
 
         # Incoming user messages can come from several different threads.
@@ -388,6 +391,17 @@ class EnforsBot(object):
 
         return output
 
+    def respond_lights_on(self, message):
+        "Turn the lights on in my house."
+        subprocess.call(["tdtool", "--on", "1"])
+        subprocess.call(["tdtool", "--on", "2"])
+        return "Lights have been turned ON."
+
+    def respond_lights_off(self, message):
+        "Turn the lights out in my house."
+        subprocess.call(["tdtool", "--off", "1"])
+        subprocess.call(["tdtool", "--off", "2"])
+        return "Lights have been turned OFF."
 
     def check_syscond(self):
         "Check the SysCond status of the host."
