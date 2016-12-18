@@ -52,7 +52,7 @@ class EnforsBot(object):
             "status"             : self.respond_status,
             "lights out"         : self.respond_lights_off,
             "lights off"         : self.respond_lights_off,
-            "lignts on"          : self.respond_lights_on,
+            "lights on"          : self.respond_lights_on,
         }
 
         # Incoming user messages can come from several different threads.
@@ -393,14 +393,12 @@ class EnforsBot(object):
 
     def respond_lights_on(self, message):
         "Turn the lights on in my house."
-        subprocess.call(["tdtool", "--on", "1"])
-        subprocess.call(["tdtool", "--on", "2"])
+        subprocess.call(["lights", "on"])
         return "Lights have been turned ON."
 
     def respond_lights_off(self, message):
         "Turn the lights out in my house."
-        subprocess.call(["tdtool", "--off", "1"])
-        subprocess.call(["tdtool", "--off", "2"])
+        subprocess.call(["lights", "off"])
         return "Lights have been turned OFF."
 
     def check_syscond(self):
