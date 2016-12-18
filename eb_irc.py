@@ -128,5 +128,4 @@ class IRCThread(eb_thread.Thread, irc.IRCBot):
                         "(user, type, channel, message, time) values "
                         "(?, ?, ?, ?, ?)",
                         (msg.sender, msg.msg_type, msg.channel, msg.msg_text,
-                        datetime.datetime.now()))
-            
+                         datetime.datetime.now()))
