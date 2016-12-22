@@ -12,11 +12,12 @@ class User(object):
 
     known_protocols = ("Twitter", "Telegram", "IRC")
 
-    def __init__(self, config, database, name=None, password=None,
-                 protocols={}):
+    def __init__(self, config, database, user_id=None, name=None,
+                 password=None, protocols={}):
         # pylint: disable=dangerous-default-value
         self.config = config
         self.database = database
+        self.user_id = user_id
         self.name = name
         self.password = password
 
@@ -87,9 +88,9 @@ class User(object):
             cur = self.database.cursor()
 
             cur.execute("insert or replace into USER "
-                        "(USERID, NAME, TWITTER_ID, TELEGRAM_ID, IRC_ID, CREATED) "
-                        "values "
-                        "((select USERID from USER where NAME = '?'), "
+                        "(USER_ID, NAME, TWITTER_ID, TELEGRAM_ID, IRC_ID, " \
+                        "CREATED) values "
+                        "((select USER_ID from USER where NAME = '?'), "
                         "?, ?, ?, ?, ?);",
                         (self.name,
                          self.protocols["Twitter"],
@@ -97,8 +98,13 @@ class User(object):
                          self.protocols["IRC"],
                          datetime.datetime.now()))
 
+            # The user is saved. Now, find it's user_id number.
+            cur.execute("select USER_ID from USER " \
+                        "where NAME=?", (self.name,))
+            self.user_id = cur.fetchone()
+
     def __repr__(self):
-        output = "User: %s" % self.name
+        output = "User: %s[%s]" % (self.name, str(self.user_id))
         #output += "\n- Protocols:" % self.name
         #for protocol in self.protocols.keys():
         #    output += "\n  - %s:%s" % (protocol, self.protocols[protocol])
@@ -113,12 +119,12 @@ class UserHandler(object):
         self.config = config
         self.database = database
 
-        christer = User(self.config, self.database, "Christer",
+        christer = User(self.config, self.database, None, "Christer",
                         protocols={"Twitter": "Enfors",
                                    "Telegram": "167773515",
                                    "IRC": "Enfors"})
 
-        indra = User(self.config, self.database, "Indra",
+        indra = User(self.config, self.database, None, "Indra",
                      protocols={"Twitter": "IndraEnfors"})
 
         self.users = []
@@ -152,16 +158,18 @@ class UserHandler(object):
             print("find_user_by_identifier(): Unknown protocol '%s'" %
                   protocol)
 
-        query = "select NAME, PASSWORD, TWITTER_ID, TELEGRAM_ID, IRC_ID " \
-                "from USER where %s=?" % col
+        query = "select USER_ID, NAME, PASSWORD, TWITTER_ID, TELEGRAM_ID, " \
+                "IRC_ID from USER where %s=?" % col
 
         with self.config.lock, self.database:
             cur = self.database.cursor()
             cur.execute(query, (identifier,))
 
             try:
-                (name, password, twitter_id, telegram_id, irc_id) = cur.fetchone()
-                user = User(self.config, self.database, name, password,
+                (user_id, name, password, twitter_id, telegram_id, \
+                 irc_id) = cur.fetchone()
+                user = User(self.config, self.database, user_id, name,
+                            password,
                             {"Twitter": twitter_id,
                              "Telegram": telegram_id,
                              "IRC": irc_id})
@@ -171,7 +179,7 @@ class UserHandler(object):
                              "IRC": irc_id}
                 protocols[protocol] = identifier
 
-                user = User(self.config, self.database, name, password,
+                user = User(self.config, self.database, None, name, password,
                             protocols)
                 # Don't save the user now; wait until they have given
                 # us their name.

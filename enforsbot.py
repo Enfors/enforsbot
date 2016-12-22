@@ -184,6 +184,7 @@ class EnforsBot(object):
             protocol = "Twitter"
         user = self.user_handler.find_user_by_identifier(protocol,
                                                          user_name)
+        print(user)
         response = ""
         default_response = "I'm afraid I don't understand."
 
@@ -208,7 +209,7 @@ class EnforsBot(object):
             self.start_ask_user_name(user, text)
 
         # Handle any activities that are currently going on
-        if user and user.current_activity():
+        if user.current_activity():
             repeat = True
             while repeat:
                 status = self.handle_activity(user, text)
