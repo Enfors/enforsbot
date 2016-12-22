@@ -103,6 +103,48 @@ class User(object):
                         "where NAME=?", (self.name,))
             self.user_id = cur.fetchone()
 
+    def save_data(self, field, val):
+        "Save arbitrary value for the user to the database."
+
+        field = str(field)
+        val = str(val)
+
+        print("Saving %s=%s" % (field, val))
+        with self.config.lock, self.database:
+            cur = self.database.cursor()
+
+            cur.execute("select FIELD from USER_DATA "
+                        "where USER_ID=? and FIELD=?",
+                        (self.user_id, field))
+            row = cur.fetchone()
+
+            if row is None:
+                cur.execute("insert into USER_DATA "
+                            "values (?, ?, ?, ?)",
+                            (self.user_id, field, val,
+                             datetime.datetime.now()))
+            else:
+                cur.execute("update USER_DATA "
+                            "set VAL=?, LAST_UPDATE=? "
+                            "where USER_ID=? and FIELD=?",
+                            (val, datetime.datetime.now(),
+                             self.user_id, field))
+
+    def load_data(self, field):
+        "Load arbitrary user data, previously saved with save_data."
+
+        field = str(field)
+
+        with self.config.lock, self.database:
+            cur = self.database.cursor()
+
+            cur.execute("select VAL from USER_DATA "
+                        "where USER_ID=? and FIELD=?",
+                        (self.user_id, field))
+            val = cur.fetchone()
+
+        return val
+
     def __repr__(self):
         output = "User: %s[%s]" % (self.name, str(self.user_id))
         #output += "\n- Protocols:" % self.name

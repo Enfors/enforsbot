@@ -30,3 +30,8 @@ with con:
                 "IRC_ID      TEXT,"
                 "CREATED     TIMESTAMP);")
 
+    cur.execute("CREATE TABLE IF NOT EXISTS USER_DATA("
+                "USER_ID     INTEGER,"
+                "FIELD       TEXT,"
+                "VAL         TEXT,"
+                "LAST_UPDATE TIMESTAMP);")
