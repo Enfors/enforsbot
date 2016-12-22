@@ -30,9 +30,19 @@ class MathDrill(eb_activity.Activity):
     def end(self):
         "Called at end of drill. Returns a string to the user."
 
-        self.score = self.calc_score()
+        minutes = int(self.elapsed_time / 60)
+        if minutes is 1:
+            time_output = "1 minute, "
+        elif minutes is not 0:
+            time_output = "%d minutes, " % minutes
+        else:
+            time_output = ""
 
-        output = "\nElapsed time: %d seconds." % self.elapsed_time
+        time_output += "%d seconds. " % (self.elapsed_time % 60)
+
+        output = "\nTime: " + time_output
+
+        self.score = self.calc_score()
         output += "\nScore: %d points." % self.score
         return output
 
@@ -68,5 +78,6 @@ class MathDrill(eb_activity.Activity):
 
         score = (30 - avg_time) * (self.drill.num_questions /
                                    self.drill.num_correct)
+        score *= self.drill.limit
         return score
 
