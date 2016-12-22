@@ -22,7 +22,7 @@ with con:
                 "TIME        TIMESTAMP);")
 
     cur.execute("CREATE TABLE IF NOT EXISTS USER("
-                "USERID      INTEGER PRIMARY KEY AUTOINCREMENT,"
+                "USER_ID     INTEGER PRIMARY KEY AUTOINCREMENT,"
                 "NAME        TEXT,"
                 "PASSWORD    TEXT,"
                 "TWITTER_ID  TEXT,"
