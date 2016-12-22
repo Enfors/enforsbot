@@ -30,7 +30,6 @@ class EnforsBot(object):
 
     def __init__(self):
         self.config = eb_config.Config()
-        self.user_handler = eb_user.UserHandler(self.config)
 
         # Responses are regexps.
         self.responses = {
@@ -78,15 +77,13 @@ class EnforsBot(object):
 
         self.database = sqlite3.connect("enforsbot.db",
                                         detect_types=sqlite3.PARSE_DECLTYPES)
-
-
+        self.user_handler = eb_user.UserHandler(self.config, self.database)
 
     def start(self):
         "Start the bot."
         self.start_all_threads()
 
         self.main_loop()
-
 
     def main_loop(self):
         "The main loop of the bot."
@@ -202,12 +199,12 @@ class EnforsBot(object):
 
         text = text.lower()
         # If this is a command to start an activity:
-        if text in self.activity_cmds.keys():
+        if text in self.activity_cmds.keys() and not user.current_activity():
             self.start_activity(user, text)
 
         # If we don't have a name for the user, then insert
         # a question about the user's name.
-        if user and user.name is None and not user.current_activity():
+        if user.name is None and not user.current_activity():
             self.start_ask_user_name(user, text)
 
         # Handle any activities that are currently going on

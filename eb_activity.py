@@ -163,5 +163,6 @@ class AskUserNameActivity(AskStringActivity):
             name = status.result.title()
             status.output = "Nice to meet you, %s. " % name
             self.user.name = name
+            self.user.save()
         return status
 

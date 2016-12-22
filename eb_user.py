@@ -4,13 +4,28 @@
 
 from __future__ import print_function
 
+import datetime
+import sqlite3
+
 class User(object):
     "Keep track of the same human across multiple protocols."
 
-    def __init__(self, config, name=None, password=None, protocols={}):
+    known_protocols = ("Twitter", "Telegram", "IRC")
+
+    def __init__(self, config, database, name=None, password=None,
+                 protocols={}):
+        # pylint: disable=dangerous-default-value
         self.config = config
+        self.database = database
         self.name = name
         self.password = password
+
+        for protocol in self.known_protocols:
+            try:
+                protocols[protocol]
+            except KeyError:
+                protocols[protocol] = None
+
         self.protocols = protocols
         self.activities = []
 
@@ -22,7 +37,7 @@ class User(object):
     def find_identifier_by_protocol(self, protocol):
         "Given a protocol, return the identifier."
         try:
-            return self.protocols[protocol]["identifier"]
+            return self.protocols[protocol]
         except KeyError:
             return None
 
@@ -33,7 +48,7 @@ class User(object):
         # Add the Twitter user @enfors to this user:
         user.add_protocol("Twitter", "Enfors")
         """
-        self.protocols[protocol]["identifier"] = identifier
+        self.protocols[protocol] = identifier
 
     def insert_activity(self, activity):
         "Add an activity to the start of the queue."
@@ -64,14 +79,29 @@ class User(object):
         else:
             return self.activities[0]
 
-    def __repr__(self):
-        output = "User: %s\n- Protocols:" % self.name
-        for protocol in self.protocols.keys():
-            output += "\n  - %s:" % protocol
+    def save(self):
+        "Save the user."
+        print("Saving user '%s'" % self.name)
 
-            for data in self.protocols[protocol]:
-                output += "\n    - %-14s: %s" % (data,
-                                                 self.protocols[protocol][data])
+        with self.config.lock, self.database:
+            cur = self.database.cursor()
+
+            cur.execute("insert or replace into USER "
+                        "(USERID, NAME, TWITTER_ID, TELEGRAM_ID, IRC_ID, CREATED) "
+                        "values "
+                        "((select USERID from USER where NAME = '?'), "
+                        "?, ?, ?, ?, ?);",
+                        (self.name,
+                         self.protocols["Twitter"],
+                         self.protocols["Telegram"],
+                         self.protocols["IRC"],
+                         datetime.datetime.now()))
+
+    def __repr__(self):
+        output = "User: %s" % self.name
+        #output += "\n- Protocols:" % self.name
+        #for protocol in self.protocols.keys():
+        #    output += "\n  - %s:%s" % (protocol, self.protocols[protocol])
 
         return output
 
@@ -79,32 +109,82 @@ class User(object):
 class UserHandler(object):
     "Keep track of all users."
 
-    def __init__(self, config):
+    def __init__(self, config, database):
         self.config = config
-        enfors = User(config=self.config,
-                      protocols={"Twitter":
-                                 {"identifier": "Enfors"},
-                                 "Telegram":
-                                 {"identifier": "167773515"},
-                                 "IRC":
-                                 {"identifier": "Enfors"}})
-        indra = User("Indra", self.config,
-                     protocols={"Twitter":
-                                {"identifier": "IndraEnfors"}})
-        self.users = [enfors, indra]
+        self.database = database
+
+        christer = User(self.config, self.database, "Christer",
+                        protocols={"Twitter": "Enfors",
+                                   "Telegram": "167773515",
+                                   "IRC": "Enfors"})
+
+        indra = User(self.config, self.database, "Indra",
+                     protocols={"Twitter": "IndraEnfors"})
+
+        self.users = []
+        #self.users = [christer, indra]
 
     def find_user_by_identifier(self, protocol, identifier):
         "Given a protocol and identifier, find and return a user."
 
         identifier = str(identifier)
 
-        for user in self.users:
+        # If the user is online, return them.
+        user = self.find_online_user_by_identifier(protocol, identifier)
+        if user:
+            return user
+
+        # The user is not online. Load them from the database, or create
+        # them if they're not already there.
+        name = None
+        twitter_id = None
+        telegram_id = None
+        irc_id = None
+        password = None
+
+        if protocol.lower() == "twitter":
+            col = "TWITTER_ID"
+        elif protocol.lower() == "telegram":
+            col = "TELEGRAM_ID"
+        elif protocol.lower() == "irc":
+            col = "IRC_ID"
+        else:
+            print("find_user_by_identifier(): Unknown protocol '%s'" %
+                  protocol)
+
+        query = "select NAME, PASSWORD, TWITTER_ID, TELEGRAM_ID, IRC_ID " \
+                "from USER where %s=?" % col
+
+        with self.config.lock, self.database:
+            cur = self.database.cursor()
+            cur.execute(query, (identifier,))
+
             try:
-                if user.protocols[protocol]["identifier"].lower() == \
-                   identifier.lower():
-                    return user
-            except KeyError:
-                continue
+                (name, password, twitter_id, telegram_id, irc_id) = cur.fetchone()
+                user = User(self.config, self.database, name, password,
+                            {"Twitter": twitter_id,
+                             "Telegram": telegram_id,
+                             "IRC": irc_id})
+            except TypeError:
+                protocols = {"Twitter": twitter_id,
+                             "Telegram": telegram_id,
+                             "IRC": irc_id}
+                protocols[protocol] = identifier
+
+                user = User(self.config, self.database, name, password,
+                            protocols)
+                # Don't save the user now; wait until they have given
+                # us their name.
+
+        self.users.append(user)
+        return user
+
+    def find_online_user_by_identifier(self, protocol, identifier):
+        "Find a user we've talked to previously, since last restart."
+
+        for user in self.users:
+            if user.protocols[protocol] == identifier:
+                return user
 
         return None
 
@@ -121,5 +201,3 @@ class UserHandler(object):
 
 
 
-if __name__ == "__main__":
-    UserHandler().test()
