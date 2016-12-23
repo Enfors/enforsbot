@@ -43,9 +43,9 @@ class TwitterThread(eb_thread.Thread):
                                              self.config)
         self.rest_thread.start()
 
-        self.streams_thread = TwitterStreamsThread("TwitterStreams",
-                                                   self.config)
-        self.streams_thread.start()
+        #self.streams_thread = TwitterStreamsThread("TwitterStreams",
+        #                                           self.config)
+        #self.streams_thread.start()
 
         message = eb_message.Message("Twitter", eb_message.MSG_TYPE_THREAD_STARTED)
         self.config.send_message("Main", message)
@@ -70,8 +70,6 @@ class TwitterRestThread(eb_thread.Thread):
         message = eb_message.Message("TwitterRest",
                                      eb_message.MSG_TYPE_THREAD_STARTED)
         self.config.send_message("Main", message)
-
-        #self.send_direct_message("Bot running.", "enfors")
 
         while True:
             message = self.config.recv_message("TwitterRest")

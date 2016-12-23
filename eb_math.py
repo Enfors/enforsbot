@@ -14,17 +14,22 @@ class MathDrill(eb_activity.Activity):
         self.name = "MathDrill"
         math_user = math_engine.User(user.name)
         self.drill = math_engine.MultiplicationDrill(math_user,
-                                                     starting_limit=6,
-                                                     num_questions=10)
+                                                     starting_limit=12,
+                                                     num_questions=5)
+        self.started = False
 
     def start(self, text): # pylint: disable=unused-argument
         "Start the activity."
-        return self.drill.start()
+        pass
 
     def handle_text(self, text):
         """Handle incoming text from the user, return
         math_engine.ActivityStatus object or None if we don't want to
         repond to this text.
         """
-        return self.drill.recv_input(text)
+        if not self.started:
+            self.started = True
+            return self.drill.start()
+        else:
+            return self.drill.recv_input(text)
 

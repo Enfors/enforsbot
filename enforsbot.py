@@ -8,6 +8,7 @@ import socket
 import subprocess
 import sqlite3
 
+import eb_activity
 import eb_config
 import eb_irc
 import eb_math
@@ -24,9 +25,11 @@ SYSCOND_DIR = "/home/enfors/syscond"
 class EnforsBot(object):
     "The main class of the application."
 
+    # pylint: disable=too-many-instance-attributes
+    # I see no problem with them.
+
     def __init__(self):
         self.config = eb_config.Config()
-        self.user_handler = eb_user.UserHandler()
 
         # Responses are regexps.
         self.responses = {
@@ -46,6 +49,9 @@ class EnforsBot(object):
             "locate"             : self.respond_location,
             "syscond"            : self.respond_syscond,
             "status"             : self.respond_status,
+            "lights out"         : self.respond_lights_off,
+            "lights off"         : self.respond_lights_off,
+            "lights on"          : self.respond_lights_on,
         }
 
         # Incoming user messages can come from several different threads.
@@ -62,20 +68,22 @@ class EnforsBot(object):
             "IRC"            : "IRC"
         }
 
+        self.activity_cmds = {
+            "multi"          : self.start_multi,
+            }
+
         self.location = None
         self.arrived = False
 
         self.database = sqlite3.connect("enforsbot.db",
                                         detect_types=sqlite3.PARSE_DECLTYPES)
-
-
+        self.user_handler = eb_user.UserHandler(self.config, self.database)
 
     def start(self):
         "Start the bot."
         self.start_all_threads()
 
         self.main_loop()
-
 
     def main_loop(self):
         "The main loop of the bot."
@@ -176,7 +184,8 @@ class EnforsBot(object):
             protocol = "Twitter"
         user = self.user_handler.find_user_by_identifier(protocol,
                                                          user_name)
-        response = None
+        print(user)
+        response = ""
         default_response = "I'm afraid I don't understand."
 
         # If this is an IRC message:
@@ -190,20 +199,23 @@ class EnforsBot(object):
                 return None
 
         text = text.lower()
-        if user and user.activity:
-            status = user.activity.handle_text(text)
-            response = status.output
-            if status.done:
-                user.activity = None
-        elif text == "multi":
-            if not user:
-                response = "I'm sorry, I can't let you do that."
-            else:
-                user.activity = eb_math.MathDrill(user)
-                status = user.activity.start(text)
-                if status.done:
-                    user.activity = None
-                response = status.output
+        # If this is a command to start an activity:
+        if text in self.activity_cmds.keys() and not user.current_activity():
+            self.start_activity(user, text)
+
+        # If we don't have a name for the user, then insert
+        # a question about the user's name.
+        if user.name is None and not user.current_activity():
+            self.start_ask_user_name(user, text)
+
+        # Handle any activities that are currently going on
+        if user.current_activity():
+            repeat = True
+            while repeat:
+                status = self.handle_activity(user, text)
+                response += status.output + " "
+                repeat = status.done and user.current_activity()
+
         else:
             for pattern, pattern_response in self.responses.items():
                 pat = re.compile(pattern)
@@ -214,7 +226,7 @@ class EnforsBot(object):
                     if callable(response):
                         response = response(text)
 
-            if response is None:
+            if response is "":
                 response = default_response
 
             response = response.strip() + "\n"
@@ -228,7 +240,45 @@ class EnforsBot(object):
             self.config.send_message(response_thread, message)
 
 
-    def respond_ip(self, message):
+    def start_activity(self, user, text):
+        """Check if text is a command to start an activity, and if so,
+        start it. Return True if started, otherwise False."""
+        text = text.strip().lower()
+
+        if text in self.activity_cmds.keys():
+            self.activity_cmds[text](user, text)
+            return True
+        else:
+            return False
+
+    @staticmethod
+    def handle_activity(user, text):
+        """Send user input to ongoing activity."""
+        activity = user.current_activity()
+        if not activity:
+            return None
+
+        status = activity.handle_text(text)
+        if status.done:
+            user.remove_activity()
+        return status
+
+    @staticmethod
+    def start_ask_user_name(user, text):
+        """Ask the user for their name."""
+        activity = eb_activity.AskUserNameActivity(user)
+        user.insert_activity(activity)
+
+    @staticmethod
+    def start_multi(user, text):
+        """Start multiplication practice activity."""
+        activity = eb_math.MathDrill(user)
+        user.push_activity(activity)
+        return True
+
+
+    @staticmethod
+    def respond_ip(message):
         "Return our local IP address."
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.connect(("gmail.com", 80)) # I'm abusing gmail.
@@ -339,6 +389,15 @@ class EnforsBot(object):
 
         return output
 
+    def respond_lights_on(self, message):
+        "Turn the lights on in my house."
+        subprocess.call(["lights", "on"])
+        return "Lights have been turned ON."
+
+    def respond_lights_off(self, message):
+        "Turn the lights out in my house."
+        subprocess.call(["lights", "off"])
+        return "Lights have been turned OFF."
 
     def check_syscond(self):
         "Check the SysCond status of the host."
