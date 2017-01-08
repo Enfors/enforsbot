@@ -43,7 +43,24 @@ class MathDrill(eb_activity.Activity):
         output = "\nTime: " + time_output
 
         self.score = self.calc_score()
-        output += "\nScore: %d points." % self.score
+        record = self.user.load_data("multi_record")
+        output += "\nScore: %d points" % self.score
+
+        if record is not None:
+            print("record: ", record)
+            print("str(record): %s" % str(record))
+            record = int(record)
+
+            if self.score > record:
+                output += " - a new record! (previous record: %d)" % \
+                          record
+                self.user.save_data("multi_record", str(self.score))
+            else:
+                output += " (record: %d)." % record
+        else:
+            self.user.save_data("multi_record", str(self.score))
+            output += "."
+
         return output
 
     def handle_text(self, text):
@@ -79,5 +96,5 @@ class MathDrill(eb_activity.Activity):
         score = (30 - avg_time) * (self.drill.num_questions /
                                    self.drill.num_correct)
         score *= self.drill.limit
-        return score
+        return int(score)
 
