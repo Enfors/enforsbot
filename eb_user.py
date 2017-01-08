@@ -5,7 +5,6 @@
 from __future__ import print_function
 
 import datetime
-import sqlite3
 
 class User(object):
     "Keep track of the same human across multiple protocols."
@@ -130,7 +129,7 @@ class User(object):
                             (val, datetime.datetime.now(),
                              self.user_id, field))
 
-    def load_data(self, field):
+    def load_data(self, field, default=None):
         "Load arbitrary user data, previously saved with save_data."
 
         field = str(field)
@@ -143,7 +142,10 @@ class User(object):
                         (self.user_id, field))
             val = cur.fetchone()
 
-        return val
+        if val is None:
+            return default
+        else:
+            return val[0]
 
     def __repr__(self):
         output = "User: %s[%s]" % (self.name, str(self.user_id))
