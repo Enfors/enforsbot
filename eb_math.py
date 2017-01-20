@@ -47,8 +47,6 @@ class MathDrill(eb_activity.Activity):
         output += "\nScore: %d points" % self.score
 
         if record is not None:
-            print("record: ", record)
-            print("str(record): %s" % str(record))
             record = int(record)
 
             if self.score > record:
