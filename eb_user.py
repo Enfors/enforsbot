@@ -108,7 +108,7 @@ class User(object):
         field = str(field)
         val = str(val)
 
-        print("Saving %s=%s" % (field, val))
+        print("Saving %s=%s for user %s" % (field, val, self.name))
         with self.config.lock, self.database:
             cur = self.database.cursor()
 
