@@ -13,6 +13,7 @@ import eb_config
 import eb_irc
 import eb_math
 import eb_message
+import eb_parser
 import eb_telegram
 import eb_twitter
 import eb_user
@@ -30,7 +31,7 @@ class EnforsBot(object):
 
     def __init__(self):
         self.config = eb_config.Config()
-
+        self.cmd_parser = eb_parser.CmdParser()
         # Responses are regexps.
         self.responses = {
             "ip"                 : self.respond_ip,
