@@ -5,11 +5,17 @@ import os
 
 import eb_update
 
-user_cmds_dir = "cmd/user"
-admin_cmds_dir = "cmd/admin"
+user_cmds_dir = "eb_cmd/user"
+admin_cmds_dir = "eb_cmd/admin"
 
-class ParseError(object):
+class ParseError(BaseException):
     "A parse error exception."
+    pass
+
+class ParseWrongRule(BaseException):
+    pass
+
+class IncorrectInput(BaseException):
     pass
 
 class CmdParser(object):
@@ -34,6 +40,7 @@ class CmdParser(object):
                 raise ParseError("I have no idea what \"%s\" means." %
                                  cmd_name)
 
+            print("parser: cmd_path='%s'" % cmd_path)
             cmd = eb_update.update.request_obj(cmd_path, "Cmd")
 
             if len(cmd.rules) == 0:
@@ -97,10 +104,19 @@ class CmdParser(object):
             raise IncorrectInput("I was expecting more.")
 
         args.append(" ".join(inp))
-        inp = [ ]
+        inp = []
 
         return input, rule, args
-        
+
+    def find_cmd_path(self, cmd_name, user):
+        cmd_lists = [self.user_cmds]
+
+        # todo: Add admin cmd_list here if user is admin
+        for cmd_list in cmd_lists:
+            if cmd_name in cmd_list:
+                cmd_path = cmd_list[cmd_name] + "." + cmd_name
+                return cmd_path
+
     def load_all_cmd_lists(self):
         "Load all command lists."
 

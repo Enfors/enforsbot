@@ -199,6 +199,8 @@ class EnforsBot(object):
                channel.lower() != "enforstestbot":
                 return None
 
+        print("Parser says: %s" % self.cmd_parser.parse(text, user))
+
         text = text.lower()
         # If this is a command to start an activity:
         if text in self.activity_cmds.keys() and not user.current_activity():

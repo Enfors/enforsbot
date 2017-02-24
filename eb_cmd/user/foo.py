@@ -1,5 +1,5 @@
 "Foo command, for testing only."
-import cmd.user.eb_user_cmd as eb_user_cmd
+import eb_cmd.user.eb_user_cmd as eb_user_cmd
 
 class Cmd(eb_user_cmd.UserCmd):
     "Foo command. Does nothing useful."

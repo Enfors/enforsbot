@@ -1,10 +1,10 @@
 "Base inheritable for commands by Christer Enfors (c) 2017"
 
-class Cmd:
+class Cmd(object):
     "Base inheritable for commands."
 
     def __init__(self):
-        self.rules = [ ]
+        self.rules = []
         self.setup()
 
     def setup(self):
