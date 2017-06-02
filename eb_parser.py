@@ -121,7 +121,7 @@ class CmdParser(object):
         "Load all command lists."
 
         self.user_cmds = self.load_cmd_list(user_cmds_dir)
-        self.admin_cmds = self.load_cmd_list(admin_cmds_dir)
+        #self.admin_cmds = self.load_cmd_list(admin_cmds_dir)
 
     def load_cmd_list(self, path):
         "Load a command list from the specified path."
