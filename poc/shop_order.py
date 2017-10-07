@@ -13,18 +13,19 @@ class Item(object):
         return "%-16s: %4d (%s)" % (self.name, self.avg, self.vals)
 
     def add_val(self, val):
+        "Add another value."
         self.vals.append(val)
         if len(self.vals) > 4:
             self.vals = self.vals[-4:]
 
-        sum = 0
-        for val in self.vals:
-            sum += val
+        _sum = 0
+        for _val in self.vals:
+            _sum += _val
 
-        if sum == 0:
+        if _sum == 0:
             self.avg = 0
         else:
-            self.avg = int(sum / len(self.vals))
+            self.avg = int(_sum / len(self.vals))
         return self.avg
 
 def main():
