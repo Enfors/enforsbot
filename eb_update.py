@@ -18,7 +18,7 @@ class Update(object):
             # todo: handle exceptions here
 
             # The module hasn't been loaded yet. Load it now.
-            mod = __import__("eb_cmd." + module_path)
+            mod = __import__(module_path)
 
             self.modules[module_path] = mod
             self.objects[module_path] = {}
