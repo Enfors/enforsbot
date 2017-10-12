@@ -3,7 +3,8 @@
 class Cmd(object):
     "Base inheritable for commands."
 
-    def __init__(self):
+    def __init__(self, name):
+        self.name = name
         self.rules = []
         self.setup()
 
@@ -21,3 +22,6 @@ class Cmd(object):
             return False
 
         self.rules.append(rule)
+
+    def __repr__(self):
+        return 'Cmd("%s")' % self.name

@@ -5,9 +5,6 @@ import os
 
 import eb_update
 
-user_cmds_dir = "eb_cmd/user"
-admin_cmds_dir = "eb_cmd/admin"
-
 class ParseError(BaseException):
     "A parse error exception."
     pass
@@ -20,11 +17,9 @@ class IncorrectInput(BaseException):
 
 class CmdParser(object):
     "Command parser object."
-    def __init__(self):
-        self.user_cmds = []
-        self.admin_cmds = []
+    def __init__(self, cmds_loader):
+        self.cmds_loader = cmds_loader
 
-        self.load_all_cmd_lists()
 
     def parse(self, orig_input, user):
         "Parse input from a user."
@@ -33,15 +28,14 @@ class CmdParser(object):
         cmd_name = orig_input[0]
         fail_explanation = "then it went downhill from there."
 
-        cmd_path = self.find_cmd_path(cmd_name, user)
+        cmd = self.cmds_loader.find_cmd(cmd_name, ["user"])
 
         try:
-            if not cmd_path:
+            if not cmd:
                 raise ParseError("I have no idea what \"%s\" means." %
                                  cmd_name)
 
-            print("parser: cmd_path='%s'" % cmd_path)
-            cmd = eb_update.update.request_obj(cmd_path, "Cmd")
+            print("parser: cmd_name='%s'" % cmd_name)
 
             if len(cmd.rules) == 0:
                 # todo: raise exception
@@ -107,46 +101,6 @@ class CmdParser(object):
         inp = []
 
         return input, rule, args
-
-    def find_cmd_path(self, cmd_name, user):
-        cmd_lists = [self.user_cmds]
-
-        # todo: Add admin cmd_list here if user is admin
-        for cmd_list in cmd_lists:
-            if cmd_name in cmd_list:
-                cmd_path = cmd_list[cmd_name] + "." + cmd_name
-                return cmd_path
-
-    def load_all_cmd_lists(self):
-        "Load all command lists."
-
-        self.user_cmds = self.load_cmd_list(user_cmds_dir)
-        #self.admin_cmds = self.load_cmd_list(admin_cmds_dir)
-
-    def load_cmd_list(self, path):
-        "Load a command list from the specified path."
-        cmd_list = { }
-        file_names = os.listdir(path)
-        
-        path = path.replace("/", ".")
-
-        print("Loading commands.")
-        for file_name in file_names:
-            print("- considering %s..." % file_name)
-            # Skip inheritable base files
-            if file_name[:3] == "eb_":
-                continue
-
-            # Skip files names not ending with .py
-            if file_name[-3:] != ".py":
-                continue
-
-            # Remove the .py from the file name
-            file_name = file_name[:-3]
-            cmd_list[file_name] = path
-            print("  loaded.")
-
-        return cmd_list
 
     def pop_first(self, entries):
         if len(entries) == 0:
