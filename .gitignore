@@ -3,3 +3,4 @@ lintscore.db
 __pycache__
 *~
 private
+*.pyc

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"enforsbot.py by Christer Enfors (c) 2015, 2016"
+"enforsbot.py by Christer Enfors (c) 2015, 2016, 2017"
 from __future__ import print_function
 
 import datetime
@@ -10,9 +10,11 @@ import sqlite3
 
 import eb_activity
 import eb_config
+import eb_cmds_loader
 import eb_irc
 import eb_math
 import eb_message
+import eb_parser
 import eb_telegram
 import eb_twitter
 import eb_user
@@ -26,17 +28,18 @@ class EnforsBot(object):
     "The main class of the application."
 
     # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-public-methods
     # I see no problem with them.
 
     def __init__(self):
         self.config = eb_config.Config()
-
+        self.cmds_loader = eb_cmds_loader.CmdsLoader(["user"])
+        self.cmd_parser = eb_parser.CmdParser(self.cmds_loader)
         # Responses are regexps.
         self.responses = {
             "ip"                 : self.respond_ip,
             "what.* ip .*"       : self.respond_ip,
             "what.*address.*"    : self.respond_ip,
-            "ping"               : "Pong.",
             ".*good morning.*"   : "Good morning!",
             ".*good afternoon.*" : "Good afternoon!",
             ".*good evening.*"   : "Good evening!",
@@ -103,7 +106,7 @@ class EnforsBot(object):
                                                  "stopped")
 
                 elif message.msg_type == eb_message.MSG_TYPE_USER_MESSAGE:
-                    self.handle_incoming_user_message(message, \
+                    self.handle_incoming_user_message(message,
                                         self.response_threads[message.sender])
 
                 elif message.msg_type == eb_message.MSG_TYPE_LOCATION_UPDATE:
@@ -121,6 +124,7 @@ class EnforsBot(object):
 
     def start_all_threads(self):
         "Start all necessary threads."
+        #pylint: disable=not-context-manager
         with self.config.lock:
 
             twitter_thread = eb_twitter.TwitterThread("Twitter",
@@ -143,11 +147,11 @@ class EnforsBot(object):
         self.config.set_thread_state("IRC", "starting")
         irc_thread.start()
 
-
     def stop_all_threads(self):
         "Stop all threads."
-        print("") # Add a newline to get away from "^C" on screen
+        print("")  # Add a newline to get away from "^C" on screen
 
+        # pylint: disable=not-context-manager
         with self.config.lock:
 
             threads_to_stop = [thread for thread in self.config.threads if
@@ -162,7 +166,6 @@ class EnforsBot(object):
 
         print("ALL THREADS STOPPED.")
 
-
     def stop_thread(self, thread):
         "Stop one specific thread."
         message = eb_message.Message("Main",
@@ -170,7 +173,6 @@ class EnforsBot(object):
         self.config.send_message(thread, message)
 
         self.config.threads[thread].join()
-
 
     def handle_incoming_user_message(self, message, response_thread):
         "Handle an incoming message of type USER."
@@ -186,11 +188,10 @@ class EnforsBot(object):
                                                          user_name)
         print(user)
         response = ""
-        default_response = "I'm afraid I don't understand."
 
         # If this is an IRC message:
         if response_thread == "IRC":
-            #msg_type = message.data["msg_type"]
+            # msg_type = message.data["msg_type"]
             channel = message.data["channel"]
 
             # But don't respond unless it's a private message.
@@ -226,8 +227,8 @@ class EnforsBot(object):
                     if callable(response):
                         response = response(text)
 
-            if response is "":
-                response = default_response
+            if response == "":
+                response = self.cmd_parser.parse(text, user)
 
             response = response.strip() + "\n"
 
@@ -235,10 +236,9 @@ class EnforsBot(object):
             print("  - Response: %s" % response.replace("\n", " "))
             message = eb_message.Message("Main",
                                          eb_message.MSG_TYPE_USER_MESSAGE,
-                                         {"user" : user_name,
-                                          "text" : response})
+                                         {"user": user_name,
+                                          "text": response})
             self.config.send_message(response_thread, message)
-
 
     def start_activity(self, user, text):
         """Check if text is a command to start an activity, and if so,
@@ -248,8 +248,8 @@ class EnforsBot(object):
         if text in self.activity_cmds.keys():
             self.activity_cmds[text](user, text)
             return True
-        else:
-            return False
+
+        return False
 
     @staticmethod
     def handle_activity(user, text):
@@ -276,28 +276,26 @@ class EnforsBot(object):
         user.push_activity(activity)
         return True
 
-
     @staticmethod
     def respond_ip(message):
         "Return our local IP address."
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.connect(("gmail.com", 80)) # I'm abusing gmail.
-                                        # I'm sure it can take it.
+        sock.connect(("gmail.com", 80))    # I'm abusing gmail.
         response = "I'm currently running on IP address %s." % \
                    sock.getsockname()[0]
         sock.close()
 
         return response
 
-
     def handle_incoming_location_update(self, message):
         "Handle incoming request for our location."
-        user = "Enfors" # Hardcoded for now. Sue me.
+        user = "Enfors"  # Hardcoded for now. Sue me.
         location = message.data["location"]
         arrived = message.data["arrived"]
 
         print("Updating location: [%s:%s]" % (location, str(arrived)))
 
+        # pylint: disable=not-context-manager
         with self.config.lock, self.database:
 
             cur = self.database.cursor()
@@ -314,7 +312,7 @@ class EnforsBot(object):
 
                 print("Main: Location updated: %s" % self.location)
 
-            else: # if leaving
+            else:  # if leaving
 
                 # If leaving the location I'm currently at (sometimes
                 # the "left source" message arrives AFTER "arrived at
@@ -331,7 +329,6 @@ class EnforsBot(object):
 
         return None
 
-
     def handle_incoming_notify_user(self, message):
         "Send notification message through Twitter."
 
@@ -341,16 +338,8 @@ class EnforsBot(object):
                                           "text": message.data["text"]})
         self.config.send_message("TwitterRest", out_message)
 
-
     def respond_location(self, message):
         "Return our location."
-        #if not self.location:
-        #    return "There whereabouts of Enfors are currently unknown."
-
-        #if self.arrived:
-        #    return "Enfors was last seen arriving at %s." % self.location
-        #else:
-        #    return "Enfors was last seen leaving %s."     % self.location
 
         with self.database:
 
@@ -365,19 +354,18 @@ class EnforsBot(object):
                 return "I have no information on that."
 
             if event == "arrived":
-                return "%s %s at %s %s." % (user, event, location, \
-                    self.get_datetime_diff_string(timestamp,
-                                                  datetime.datetime.now()))
-            else:
-                return "%s %s %s %s." % (user, event, location, \
-                    self.get_datetime_diff_string(timestamp,
-                                                  datetime.datetime.now()))
-
+                return "%s %s at %s %s." % \
+                    (user, event, location,
+                     self.get_datetime_diff_string(timestamp,
+                                                   datetime.datetime.now()))
+            return "%s %s %s %s." % \
+                (user, event, location, 
+                 self.get_datetime_diff_string(timestamp,
+                                               datetime.datetime.now()))
 
     def respond_syscond(self, message):
         "Return the SysCond status of the host."
         return self.check_syscond()
-
 
     def respond_status(self, message):
         "Return threads status."
@@ -402,13 +390,13 @@ class EnforsBot(object):
     def check_syscond(self):
         "Check the SysCond status of the host."
         try:
-            syscond_output = subprocess.Popen(["syscond", "status", "-n"], \
-                stdout=subprocess.PIPE).communicate()[0]
+            syscond_output = subprocess.Popen(["syscond", "status", "-n"],
+                                              stdout=subprocess.PIPE).\
+                                              communicate()[0]
 
             return syscond_output.decode("utf-8")
         except FileNotFoundError:
             return "SysCond is not installed on this host."
-
 
     def get_datetime_diff_string(self, date1, date2):
         "Return the diff between two datetimes, in short format."
@@ -447,7 +435,6 @@ class EnforsBot(object):
 
         else:
             return "just now"
-
 
     def get_possible_plural(self, word, num):
         "Return word+s if num is plural, otherwise word."
