@@ -188,6 +188,7 @@ class EnforsBot(object):
                                                          user_name)
         print(user)
         response = ""
+        choices = []
 
         # If this is an IRC message:
         if response_thread == "IRC":
@@ -228,7 +229,7 @@ class EnforsBot(object):
                         response = response(text)
 
             if response == "":
-                response = self.cmd_parser.parse(text, user)
+                response, choices = self.cmd_parser.parse(text, user)
 
             response = response.strip() + "\n"
 
@@ -237,7 +238,8 @@ class EnforsBot(object):
             message = eb_message.Message("Main",
                                          eb_message.MSG_TYPE_USER_MESSAGE,
                                          {"user": user_name,
-                                          "text": response})
+                                          "text": response,
+                                          "choices": choices})
             self.config.send_message(response_thread, message)
 
     def start_activity(self, user, text):

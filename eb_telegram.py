@@ -4,6 +4,7 @@ import eb_thread
 import random
 import telepot
 import time
+import types
 
 
 def read_private(filename):
@@ -42,12 +43,30 @@ class TelegramThread(eb_thread.Thread):
                     return
 
                 if message.msg_type == eb_message.MSG_TYPE_USER_MESSAGE:
-                    self.bot.sendMessage(message.data["user"],
-                                         message.data["text"])
+                    self.send_message_to_user(message)
             except error:
                 print("ERROR: %s" % error)
                 self.config.set_thread_state("Telegram", "exception")
                 time.sleep(60)
+
+    def send_message_to_user(self, message):
+        "Send a message to a user."
+
+        choices = message.data["choices"]
+        if choices:
+            # If choices is like ["a", "b"], then we need to make it like
+            # [["a", "b"]].
+            if not isinstance(choices[0], list):
+                choices = [choices]
+                
+            keyboard = {"keyboard": choices}
+        else:
+            keyboard = {"hide_keyboard": True}
+
+        self.bot.sendMessage(message.data["user"],
+                             message.data["text"],
+                             reply_markup=keyboard)
+
 
     def handle_message(self, msg):
         "Take care of a message from the user."

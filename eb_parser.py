@@ -56,7 +56,7 @@ class CmdParser(object):
                     try:
                         return eval(func_name)
                     except CmdFailed as e:
-                        return str(e)
+                        return str(e), []
                 except ParseWrongRule:
                     continue
                 except IncorrectInput as e:
@@ -64,7 +64,7 @@ class CmdParser(object):
             raise ParseError("I understood \"%s\", but %s" %
                              (cmd_name, fail_explanation))
         except ParseError as e:
-            return str(e)
+            return str(e), []
 
     def match_input_to_rule(self, inp, rule, user):
         args = []
