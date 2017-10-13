@@ -6,8 +6,10 @@ from __future__ import print_function
 # BASE ACTIVITY CLASSES
 #
 
+
 class Activity(object):
-    "An activity - interaction between user and bot that spans multiple messages."
+    """An activity - interaction between user and bot that spans
+    multiple messages."""
 
     def __init__(self, user):
         self.user = user
@@ -15,11 +17,10 @@ class Activity(object):
     def __repr__(self):
         return "Activity (base object)"
 
-    def handle_text(self, text): # pylint: disable=unused-argument,no-self-use
+    def handle_text(self, text):  # pylint: disable=unused-argument,no-self-use
         "Handle text from a user. This function must be overridden."
         print("Activity.handle_text(): Unimplemented")
         return False
-
 
 
 class StateActivity(Activity):
@@ -29,24 +30,23 @@ class StateActivity(Activity):
     def __init__(self, user):
         super(StateActivity, self).__init__(user)
 
-        self.state = self.start # state = function to call on input.
+        self.state = self.start  # state = function to call on input.
 
     def __repr__(self):
         return "StateActivity (state='%s')" % self.state
 
-    def start(self, text): # pylint: disable=no-self-use,unused-argument
+    def start(self, text):  # pylint: disable=no-self-use,unused-argument
         "The default state function. Should be overridden."
         print("StateActivity: start function not implemented error.")
-        raise SystemExit # todo: should raise something else
+        raise SystemExit  # todo: should raise something else
 
     def handle_text(self, text):
         if not callable(self.state):
             print("StateActivity: Internal error: self.state (%s) is not "
                   "callable." % self.state)
-            raise SystemExit # todo: should raise something else
+            raise SystemExit  # todo: should raise something else
 
         return self.state(text)
-
 
 
 class SelectOneActivity(StateActivity):
@@ -84,7 +84,6 @@ class SelectOneActivity(StateActivity):
             return ActivityStatus(output=self.retry_prompt)
 
 
-
 class AskYesOrNoActivity(SelectOneActivity):
     """Only accept a "yes" or a "no"."""
     def __init__(self, user, prompt=None, retry_prompt=None):
@@ -95,7 +94,6 @@ class AskYesOrNoActivity(SelectOneActivity):
 
     def __repr__(self):
         return "AskYesOrNoActivity (prompt='%s')" % self.prompt
-
 
 
 class AskStringActivity(StateActivity):
@@ -126,7 +124,6 @@ class AskStringActivity(StateActivity):
             return ActivityStatus(output="Please write something.")
 
 
-
 class AskIntActivity(Activity):
     """Only accept strings that can be converted to int."""
     def __repr__(self):
@@ -148,6 +145,7 @@ class ActivityStatus(object):
 #
 # NON-BASE CLASSES
 #
+
 
 class AskUserNameActivity(AskStringActivity):
     "Ask a user for their name."
