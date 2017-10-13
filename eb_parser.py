@@ -1,29 +1,32 @@
 """eb_parser.py - parse commands from users, by Christer Enfors (c) 2017.
 Based on my parser for DannilMUD."""
 
-import os
-
-import eb_update
 
 class ParseError(BaseException):
     "A parse error exception."
     pass
 
+
 class ParseWrongRule(BaseException):
     pass
 
+
 class IncorrectInput(BaseException):
     pass
+
+
+class CmdFailed(BaseException):
+    pass
+
 
 class CmdParser(object):
     "Command parser object."
     def __init__(self, cmds_loader):
         self.cmds_loader = cmds_loader
 
-
     def parse(self, orig_input, user):
         "Parse input from a user."
-        match_found = False
+
         orig_input = orig_input.split()
         cmd_name = orig_input[0]
         fail_explanation = "then it went downhill from there."
@@ -64,7 +67,7 @@ class CmdParser(object):
             return str(e)
 
     def match_input_to_rule(self, inp, rule, user):
-        args = [ ]
+        args = []
 
         while len(rule):
             print("+-Checking token %s..." % rule[0])
@@ -104,8 +107,8 @@ class CmdParser(object):
 
     def pop_first(self, entries):
         if len(entries) == 0:
-            return None, [ ]
+            return None, []
         elif len(entries) == 1:
-            return entries[0], [ ]
+            return entries[0], []
         else:
             return entries[0], entries[1:]

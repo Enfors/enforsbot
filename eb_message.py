@@ -19,6 +19,8 @@ EXAMPLE_USER_MESSAGES_DATA = {
     # bot or bot to owner (or perhaps from bot to other user)
     "user": "username",
     "text": "foo",
+    "choices": [["first row", "second column"],
+                ["second row", "final button"]]
 }
 
 example_location_update_data = {
