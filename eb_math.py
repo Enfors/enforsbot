@@ -8,10 +8,11 @@ import math_engine.engine as math_engine
 
 import eb_activity
 
+
 class MathDrill(eb_activity.Activity):
     "Activity for practicing math."
 
-    def __init__(self, user): # pylint: disable=super-init-not-called
+    def __init__(self, user):  # pylint: disable=super-init-not-called
         self.user = user
         self.name = "MathDrill"
         math_user = math_engine.User(user.name)
@@ -23,7 +24,7 @@ class MathDrill(eb_activity.Activity):
         self.score = None
         self.started = False
 
-    def start(self, text): # pylint: disable=unused-argument
+    def start(self, text):  # pylint: disable=unused-argument
         "Start the activity."
         pass
 
@@ -95,4 +96,3 @@ class MathDrill(eb_activity.Activity):
                                    self.drill.num_correct)
         score *= self.drill.limit
         return int(score)
-
