@@ -2,20 +2,29 @@
 Based on my parser for DannilMUD."""
 
 
-class ParseError(BaseException):
+class ParserError(BaseException):
+    "Generic parser error."
+    pass
+
+
+class ParseError(ParserError):
     "A parse error exception."
     pass
 
 
-class ParseWrongRule(BaseException):
+class ParseWrongRule(ParserError):
     pass
 
 
-class IncorrectInput(BaseException):
+class IncorrectInput(ParserError):
     pass
 
 
-class CmdFailed(BaseException):
+class CmdFailed(ParserError):
+    pass
+
+
+class UnknownCmd(ParserError):
     pass
 
 
@@ -35,7 +44,7 @@ class CmdParser(object):
 
         try:
             if not cmd:
-                raise ParseError("I have no idea what \"%s\" means." %
+                raise UnknownCmd("I have no idea what \"%s\" means." %
                                  cmd_name)
 
             print("parser: cmd_name='%s'" % cmd_name)
