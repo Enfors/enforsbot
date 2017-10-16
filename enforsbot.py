@@ -202,23 +202,27 @@ class EnforsBot(object):
 
         text = text.lower()
         # If this is a command to start an activity:
-        if text in self.activity_cmds.keys() and not user.current_activity():
-            self.start_activity(user, text)
+        # commented out - should be replaced with proper commands
+        # if text in self.activity_cmds.keys() and not user.current_activity():
+        #     self.start_activity(user, text)
 
         # If we don't have a name for the user, then insert
         # a question about the user's name.
+
+        # Check of new unknown user
+        # =========================
         if user.name is None and not user.current_activity():
+            print("This is an unknown user.")
             self.start_ask_user_name(user, text)
 
-        # Handle any activities that are currently going on
-        if user.current_activity():
-            repeat = True
-            while repeat:
-                status = self.handle_activity(user, text)
-                response += status.output + " "
-                repeat = status.done and user.current_activity()
+        # If no ongoing activity
+        # ======================
+        if not user.current_activity():
+            print("No ongoing activity.")
 
-        else:
+            # Check patterns
+            # ==============
+            print("Checking patterns.")
             for pattern, pattern_response in self.responses.items():
                 pat = re.compile(pattern)
 
@@ -228,19 +232,41 @@ class EnforsBot(object):
                     if callable(response):
                         response = response(text)
 
+            # If no pattern match found, check commands
+            # =========================================
             if response == "":
+                print("Still no response, parsing command.")
                 response, choices = self.cmd_parser.parse(text, user)
+                print("  response:", response)
+                print("  choices:", choices)
 
-            response = response.strip() + "\n"
+        # Handle any ongoing activities
+        # =============================
+        if user.current_activity():
+            print("User has an activity.")
+            repeat = True
+            while repeat:
+                status = self.handle_activity(user, text)
+                response += status.output + " "
+                choices = status.choices
+                repeat = status.done and user.current_activity()
 
-        if response is not None:
-            print("  - Response: %s" % response.replace("\n", " "))
-            message = eb_message.Message("Main",
-                                         eb_message.MSG_TYPE_USER_MESSAGE,
-                                         {"user": user_name,
-                                          "text": response,
-                                          "choices": choices})
-            self.config.send_message(response_thread, message)
+        # Admit defeat
+        # ============
+        if response == "":
+            print("I don't understand the input.")
+            response = "I have no clue what you're talking about."
+
+        # Send response
+        # =============
+        response = response.strip() + "\n"
+        print("  - Response: %s" % response.replace("\n", " "))
+        message = eb_message.Message("Main",
+                                     eb_message.MSG_TYPE_USER_MESSAGE,
+                                     {"user": user_name,
+                                      "text": response,
+                                      "choices": choices})
+        self.config.send_message(response_thread, message)
 
     def start_activity(self, user, text):
         """Check if text is a command to start an activity, and if so,

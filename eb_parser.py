@@ -54,7 +54,12 @@ class CmdParser(object):
                     func_name = "cmd.rule_%s(user, args)" % \
                                 "_".join(orig_rule)
                     try:
-                        return eval(func_name)
+                        parse_retval = eval(func_name)
+                        if isinstance(parse_retval, str):
+                            return parse_retval, []
+                        else:
+                            return parse_retval
+
                     except CmdFailed as e:
                         return str(e), []
                 except ParseWrongRule:

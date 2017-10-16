@@ -133,9 +133,10 @@ class AskIntActivity(Activity):
 class ActivityStatus(object):
     "Returned from activities."
 
-    def __init__(self, output, result=None, done=False):
+    def __init__(self, output, result=None, choices=[], done=False):
         self.output = output
         self.result = result
+        self.choices = choices
         self.done = done
 
     def __repr__(self):

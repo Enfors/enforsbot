@@ -44,10 +44,11 @@ class TelegramThread(eb_thread.Thread):
 
                 if message.msg_type == eb_message.MSG_TYPE_USER_MESSAGE:
                     self.send_message_to_user(message)
-            except error:
-                print("ERROR: %s" % error)
+            except:
+                print("ERROR in telegram thread")
                 self.config.set_thread_state("Telegram", "exception")
-                time.sleep(60)
+                raise
+                #time.sleep(60)
 
     def send_message_to_user(self, message):
         "Send a message to a user."
@@ -58,15 +59,16 @@ class TelegramThread(eb_thread.Thread):
             # [["a", "b"]].
             if not isinstance(choices[0], list):
                 choices = [choices]
-                
+
             keyboard = {"keyboard": choices}
+            print("[eb_telegram] Sending keyboard...")
         else:
             keyboard = {"hide_keyboard": True}
+            print("[eb_telegram] Sending NO keyboard...")
 
         self.bot.sendMessage(message.data["user"],
                              message.data["text"],
                              reply_markup=keyboard)
-
 
     def handle_message(self, msg):
         "Take care of a message from the user."
