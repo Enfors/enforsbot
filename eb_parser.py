@@ -40,7 +40,11 @@ class CmdParser(object):
         cmd_name = orig_input[0]
         fail_explanation = "then it went downhill from there."
 
-        cmd = self.cmds_loader.find_cmd(cmd_name, ["user"])
+        cmd_dirs = ["user"]
+        if user.name == "Christer":
+            cmd_dirs.append("admin")
+            print("Looking in admin commands:", cmd_dirs)
+        cmd = self.cmds_loader.find_cmd(cmd_name, cmd_dirs)
 
         try:
             if not cmd:

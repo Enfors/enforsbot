@@ -33,7 +33,7 @@ class EnforsBot(object):
 
     def __init__(self):
         self.config = eb_config.Config()
-        self.cmds_loader = eb_cmds_loader.CmdsLoader(["user"])
+        self.cmds_loader = eb_cmds_loader.CmdsLoader(["user", "admin"])
         self.cmd_parser = eb_parser.CmdParser(self.cmds_loader)
         # Responses are regexps.
         self.responses = {
@@ -250,6 +250,8 @@ class EnforsBot(object):
                 response += status.output + " "
                 choices = status.choices
                 repeat = status.done and user.current_activity()
+                if repeat:
+                    text = status.result
 
         # Admit defeat
         # ============

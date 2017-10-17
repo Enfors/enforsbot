@@ -141,7 +141,7 @@ SelectOneActivity(prompt="%s",
     def validate_choice(self, text):
         "Called to validate the choice the user made."
         if text in self.choices:
-            return ActivityStatus(output="Thank you.",
+            return ActivityStatus(output="Thanks.",
                                   result=text,
                                   done=True)
         else:
