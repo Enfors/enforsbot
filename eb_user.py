@@ -149,7 +149,8 @@ class User(object):
             return val[0]
 
     def __repr__(self):
-        output = "User: %s[%s]" % (self.name, str(self.user_id))
+        output = 'User(config, database, name="%s", userid=%s)' % \
+            (self.name, str(self.user_id))
         # output += "\n- Protocols:" % self.name
         # for protocol in self.protocols.keys():
         #    output += "\n  - %s:%s" % (protocol, self.protocols[protocol])

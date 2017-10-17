@@ -1,4 +1,11 @@
-"eb_activity.py by Christer Enfors (c) 2016"
+"""eb_activity.py by Christer Enfors (c) 2016
+
+Activities are a way for EnforsBot to have an "activity" for a user that
+lasts several "rounds" - as opposed to a "hello" input that would result
+in a "hello yourself" response and then be done. What this means in practice
+is that when a user has an active activity, any input from that user is sent
+to that activity, and not to the ordinary command parser.
+"""
 
 from __future__ import print_function
 
@@ -6,16 +13,33 @@ from __future__ import print_function
 # BASE ACTIVITY CLASSES
 #
 
+def make_test_user():
+    """Create a test user for use in tests."""
+    import sqlite3
+    import eb_config
+    import eb_user
+    config = eb_config.Config()
+    database = sqlite3.connect("enforsbot.db",
+                               detect_types=sqlite3.PARSE_DECLTYPES)
+    return eb_user.User(config, database, name="Enfors")
+
 
 class Activity(object):
     """An activity - interaction between user and bot that spans
-    multiple messages."""
+    multiple messages.
+    
+    This is a base class, and is not usually used directly.
+
+    >>> activity = Activity(make_test_user())
+    >>> activity
+    Activity(User(config, database, name="Enfors", userid=None))
+    """
 
     def __init__(self, user):
         self.user = user
 
     def __repr__(self):
-        return "Activity (base object)"
+        return 'Activity(%s)' % str(self.user)
 
     def handle_text(self, text):  # pylint: disable=unused-argument,no-self-use
         "Handle text from a user. This function must be overridden."
