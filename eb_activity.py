@@ -37,6 +37,7 @@ class Activity(object):
 
     def __init__(self, user):
         self.user = user
+        user.insert_activity(self)
 
     def __repr__(self):
         return 'Activity(%s)' % str(self.user)
@@ -56,10 +57,10 @@ class StateActivity(Activity):
 
         self.state = self.start  # state = function to call on input.
 
-    def __repr__(self):
-        return "StateActivity (state='%s')" % self.state
+#    def __repr__(self):
+#        return "StateActivity (state='%s')" % self.state
 
-    def start(self, text):  # pylint: disable=no-self-use,unused-argument
+    def start(self, text=None):  # pylint: disable=no-self-use,unused-argument
         "The default state function. Should be overridden."
         print("StateActivity: start function not implemented error.")
         raise SystemExit  # todo: should raise something else
@@ -93,7 +94,7 @@ class SelectOneActivity(StateActivity):
     >>> activity.start("some irrelevant text")
     ActivityStatus(output='Continue?',
                    result=None,
-                   choices=[],
+                   choices=['yes', 'no'],
                    done=False)
 
     What happens if we give it an incorrect result?
@@ -133,9 +134,9 @@ SelectOneActivity(prompt="%s",
                   choices=%s)""".strip() % \
             (self.prompt, self.retry_prompt, self.choices)
 
-    def start(self, text):
+    def start(self, text=None):
         self.state = self.validate_choice
-        return ActivityStatus(output=self.prompt)
+        return ActivityStatus(output=self.prompt, choices=self.choices)
 
     def validate_choice(self, text):
         "Called to validate the choice the user made."
@@ -148,8 +149,22 @@ SelectOneActivity(prompt="%s",
 
 
 class AskYesOrNoActivity(SelectOneActivity):
-    """Only accept a "yes" or a "no"."""
-    def __init__(self, user, prompt=None, retry_prompt=None):
+    """Only accept a "yes" or a "no".
+
+    >>> act = AskYesOrNoActivity(make_test_user(), "Are you sure?")
+    >>> print(act.start("verify"))
+    Are you sure?
+    Choices: yes, no
+    >>> print(act.handle_text("maybe"))
+    Please answer yes or no.
+    Choices: yes, no
+    >>> print(act.handle_text("yes"))
+    Thank you.
+    User entered: yes
+    Done
+    """
+    def __init__(self, user, prompt=None,
+                 retry_prompt="Please answer yes or no."):
         super(AskYesOrNoActivity, self).__init__(user,
                                                  ["yes", "no"],
                                                  prompt,
@@ -169,7 +184,7 @@ class AskStringActivity(StateActivity):
     def __repr__(self):
         return "AskStringActivity (prompt='%s')" % self.prompt
 
-    def start(self, text):
+    def start(self, text=None):
         self.state = self.validate_choice
         return ActivityStatus(output=self.prompt)
 
@@ -191,6 +206,68 @@ class AskIntActivity(Activity):
     """Only accept strings that can be converted to int."""
     def __repr__(self):
         return "AskIntActivity()"
+
+
+class ListActivity(StateActivity):
+    """Generic list-keeping activity. Groceries, todo lists, etc.
+
+    How to create a ListActivity:
+
+    >>> user = make_test_user()
+    >>> la = ListActivity(user, title="Inbox")
+    >>> print(la)
+    Inbox
+    There are no items in this list.
+
+    To start the activity:
+
+    >>> print(la.start())
+    Inbox
+    There are no items in this list.
+    Choices: Add, Delete, Clear, Done
+
+    So far so good. Let's add some items to the list.
+
+    >>> print(user.current_activity().handle_text("add"))
+    Enter a name for this item.
+    """
+
+    def __init__(self, user, title="Untitled list"):
+        StateActivity.__init__(self, user)
+
+        self.title = title
+        self.items = []
+
+    def start(self, text=None):
+        "Start the activity."
+        self.state = self.main_menu
+        return self.main_menu()
+
+    def main_menu(self, text=None):
+        "The activity's main menu."
+
+        if text == "add":
+            self.state = self.add_item
+            self.user.insert_activity(AskStringActivity(self.user,
+                                                        "Enter a name for this item."))
+            return self.user.current_activity().start()
+
+        return ActivityStatus(output=str(self), choices=['Add', 'Delete', 'Clear', 'Done'])
+    
+    def add_item(self, text):
+        "Handle incoming text from the user."
+
+        self.items.append(text)
+        self.state = self.main_menu
+
+    def __str__(self):
+        output = self.title + "\n"
+        if self.items:
+            output += "\n".join(self.items) + "\n"
+        else:
+            output += "There are no items in this list."
+            
+        return output
 
 
 class ActivityStatus(object):
@@ -221,7 +298,7 @@ class ActivityStatus(object):
     def __str__(self):
         output = self.output
         if self.result:
-            output += "\nUser entered: %s."
+            output += "\nUser entered: %s" % self.result
 
         if self.choices:
             output += "\nChoices: %s" % str.join(", ", self.choices)
