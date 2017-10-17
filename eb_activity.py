@@ -75,8 +75,43 @@ class StateActivity(Activity):
 
 class SelectOneActivity(StateActivity):
     """Have the user select one of a specific range of strings. Useful for menus
-    or "please answer yes or no" type situations."""
+    or "please answer yes or no" type situations.
 
+    Let's make an activity where we ask the user whether or not to continue:
+
+    >>> activity = SelectOneActivity(make_test_user, choices=["yes", "no"],
+    ...                              prompt="Continue?",
+    ...                              retry_prompt="Please answer yes or no.")
+    >>> activity
+    SelectOneActivity(prompt="Continue?",
+                      retry_prompt="Please answer yes or no.",
+                      choices=['yes', 'no'])
+
+    Okay, let's start the activity. The text argument should be the text
+    user entered to trigger this activity, but it doesn't really matter.
+
+    >>> activity.start("some irrelevant text")
+    ActivityStatus(output='Continue?',
+                   result=None,
+                   choices=[],
+                   done=False)
+
+    What happens if we give it an incorrect result?
+
+    >>> activity.handle_text("foo")
+    ActivityStatus(output='Please answer yes or no.',
+                   result=None,
+                   choices=['yes', 'no'],
+                   done=False)
+
+    What happens if we give it a correct result?
+
+    >>> activity.handle_text("yes")
+    ActivityStatus(output='Thank you.',
+                   result=yes,
+                   choices=[],
+                   done=True)
+    """
     def __init__(self, user, choices, prompt=None, retry_prompt=None):
         super(SelectOneActivity, self).__init__(user)
 
@@ -92,7 +127,11 @@ class SelectOneActivity(StateActivity):
             self.retry_prompt = self.prompt
 
     def __repr__(self):
-        return "SelectOneActivity (prompt='%s')" % self.prompt
+        return """
+SelectOneActivity(prompt="%s",
+                  retry_prompt="%s",
+                  choices=%s)""".strip() % \
+            (self.prompt, self.retry_prompt, self.choices)
 
     def start(self, text):
         self.state = self.validate_choice
@@ -105,7 +144,7 @@ class SelectOneActivity(StateActivity):
                                   result=text,
                                   done=True)
         else:
-            return ActivityStatus(output=self.retry_prompt)
+            return ActivityStatus(output=self.retry_prompt, choices=self.choices)
 
 
 class AskYesOrNoActivity(SelectOneActivity):
@@ -155,7 +194,15 @@ class AskIntActivity(Activity):
 
 
 class ActivityStatus(object):
-    "Returned from activities."
+    """Returned from activities.
+
+    >>> act_s = ActivityStatus("some output", choices=["foo", "bar"])
+    >>> act_s
+    ActivityStatus(output='some output',
+                   result=None,
+                   choices=['foo', 'bar'],
+                   done=False)
+    """
 
     def __init__(self, output, result=None, choices=[], done=False):
         self.output = output
@@ -164,8 +211,13 @@ class ActivityStatus(object):
         self.done = done
 
     def __repr__(self):
-        return "ActivityStatus (output='%s', result='%s', done='%s')" %\
-            (str(self.output), str(self.result), str(self.done))
+        return """
+ActivityStatus(output='%s',
+               result=%s,
+               choices=%s,
+               done=%s)""".strip() %\
+                   (str(self.output), str(self.result), str(self.choices),
+                    str(self.done))
 
 #
 # NON-BASE CLASSES
