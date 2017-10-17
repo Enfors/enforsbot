@@ -190,7 +190,7 @@ class AskStringActivity(StateActivity):
 class AskIntActivity(Activity):
     """Only accept strings that can be converted to int."""
     def __repr__(self):
-        return "AskIntActivity"
+        return "AskIntActivity()"
 
 
 class ActivityStatus(object):
