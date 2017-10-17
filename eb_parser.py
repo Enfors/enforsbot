@@ -77,7 +77,7 @@ class CmdParser(object):
                     fail_explanation = str(e)
             raise ParseError("I understood \"%s\", but %s" %
                              (cmd_name, fail_explanation))
-        except ParseError as e:
+        except ParserError as e:
             return str(e), []
 
     def match_input_to_rule(self, inp, rule, user):

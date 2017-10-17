@@ -202,6 +202,14 @@ class ActivityStatus(object):
                    result=None,
                    choices=['foo', 'bar'],
                    done=False)
+    >>> print(act_s)
+    some output
+    Choices: foo, bar
+
+    We can also make an ActivityStatus without choices:
+
+    >>> print(ActivityStatus("That's all!"))
+    That's all!
     """
 
     def __init__(self, output, result=None, choices=[], done=False):
@@ -209,6 +217,19 @@ class ActivityStatus(object):
         self.result = result
         self.choices = choices
         self.done = done
+
+    def __str__(self):
+        output = self.output
+        if self.result:
+            output += "\nUser entered: %s."
+
+        if self.choices:
+            output += "\nChoices: %s" % str.join(", ", self.choices)
+
+        if self.done:
+            output += "\nDone"
+
+        return output
 
     def __repr__(self):
         return """
