@@ -121,10 +121,9 @@ class EnforsBot(object):
             self.stop_all_threads()
             return
 
-
     def start_all_threads(self):
         "Start all necessary threads."
-        #pylint: disable=not-context-manager
+        # pylint: disable=not-context-manager
         with self.config.lock:
 
             twitter_thread = eb_twitter.TwitterThread("Twitter",
@@ -243,7 +242,7 @@ class EnforsBot(object):
         # Handle any ongoing activities
         # =============================
         if user.current_activity():
-            print("User has an activity.")
+            print("User's activities:", user.activities)
             repeat = True
             while repeat:
                 status = self.handle_activity(user, text)

@@ -14,7 +14,7 @@ class Cmd(eb_admin_cmd.AdminCmd):
 
     def rule_shutdown(self, user, args):
         print("Shutdown command called.")
-        user.insert_activity(ShutdownActivity(user))
+        ShutdownActivity(user)
         return "Shutdown command recognized. "
 
 
@@ -22,10 +22,16 @@ class ShutdownActivity(eb_activity.StateActivity):
     """Activity to shutdown the bot after verification."""
 
     def __init__(self, user):
-        eb_activity.StateActivity.__init__(self, user)
+        super().__init__(user)
 
     def start(self, text):
         act = eb_activity.AskYesOrNoActivity(self.user,
                                              prompt="Shutdown EnforsBot?")
-        self.user.insert_activity(act)
+        self.state = self.awaiting_confirmation
         return act.start()
+
+    def awaiting_confirmation(self, text):
+        "Activity is waiting for yes or no from user."
+
+        return eb_activity.ActivityStatus(output="%s it is!" % text,
+                                          done=True)

@@ -40,7 +40,7 @@ class Activity(object):
         user.insert_activity(self)
 
     def __repr__(self):
-        return 'Activity(%s)' % str(self.user)
+        return '%s(%s)' % (type(self).__name__, str(self.user))
 
     def handle_text(self, text):  # pylint: disable=unused-argument,no-self-use
         "Handle text from a user. This function must be overridden."
@@ -53,7 +53,7 @@ class StateActivity(Activity):
     it gets input."""
 
     def __init__(self, user):
-        super(StateActivity, self).__init__(user)
+        super().__init__(user)
 
         self.state = self.start  # state = function to call on input.
 
@@ -114,8 +114,7 @@ class SelectOneActivity(StateActivity):
                    done=True)
     """
     def __init__(self, user, choices, prompt=None, retry_prompt=None):
-        super(SelectOneActivity, self).__init__(user)
-
+        super().__init__(user)
         self.choices = choices
         if prompt:
             self.prompt = prompt
@@ -165,24 +164,24 @@ class AskYesOrNoActivity(SelectOneActivity):
     """
     def __init__(self, user, prompt=None,
                  retry_prompt="Please answer yes or no."):
-        super(AskYesOrNoActivity, self).__init__(user,
-                                                 ["yes", "no"],
-                                                 prompt,
-                                                 retry_prompt)
+        super().__init__(user,
+                         ["yes", "no"],
+                         prompt,
+                         retry_prompt)
 
     def __repr__(self):
-        return "AskYesOrNoActivity (prompt='%s')" % self.prompt
+        return "%s(prompt='%s')" % (type(self).__name__, self.prompt)
 
 
 class AskStringActivity(StateActivity):
     """Accept any non-emtpy string."""
 
     def __init__(self, user, prompt):
-        super(AskStringActivity, self).__init__(user)
+        super().__init__(user)
         self.prompt = prompt
 
     def __repr__(self):
-        return "AskStringActivity (prompt='%s')" % self.prompt
+        return "%s(prompt='%s')" % (type(self).__name__, self.prompt)
 
     def start(self, text=None):
         self.state = self.validate_choice
@@ -233,7 +232,7 @@ class ListActivity(StateActivity):
     """
 
     def __init__(self, user, title="Untitled list"):
-        StateActivity.__init__(self, user)
+        super().__init__(user)
 
         self.title = title
         self.items = []
@@ -325,17 +324,16 @@ ActivityStatus(output='%s',
 class AskUserNameActivity(AskStringActivity):
     "Ask a user for their name."
     def __init__(self, user):
-        super(AskUserNameActivity, self).__init__(user,
-                                                  "Hello there! "
-                                                  "I don't believe we've met. "
-                                                  "What's your name?")
+        super().__init__(user,
+                         "Hello there! "
+                         "I don't believe we've met. "
+                         "What's your name?")
 
     def validate_choice(self, text):
-        status = super(AskUserNameActivity, self).validate_choice(text)
+        status = super().validate_choice(text)
         if status.done:
             name = status.result.title()
             status.output = "Nice to meet you, %s. " % name
             self.user.name = name
             self.user.save()
         return status
-
