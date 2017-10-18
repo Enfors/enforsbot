@@ -80,7 +80,7 @@ class SelectOneActivity(StateActivity):
 
     Let's make an activity where we ask the user whether or not to continue:
 
-    >>> activity = SelectOneActivity(make_test_user, choices=["yes", "no"],
+    >>> activity = SelectOneActivity(make_test_user(), choices=["yes", "no"],
     ...                              prompt="Continue?",
     ...                              retry_prompt="Please answer yes or no.")
     >>> activity
@@ -140,7 +140,7 @@ SelectOneActivity(prompt="%s",
     def validate_choice(self, text):
         "Called to validate the choice the user made."
         if text in self.choices:
-            return ActivityStatus(output="Thanks.",
+            return ActivityStatus(output="Thank you.",
                                   result=text,
                                   done=True)
         else:
