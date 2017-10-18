@@ -61,10 +61,8 @@ class TelegramThread(eb_thread.Thread):
                 choices = [choices]
 
             keyboard = {"keyboard": choices}
-            print("[eb_telegram] Sending keyboard...")
         else:
             keyboard = {"hide_keyboard": True}
-            print("[eb_telegram] Sending NO keyboard...")
 
         self.bot.sendMessage(message.data["user"],
                              message.data["text"],

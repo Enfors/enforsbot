@@ -278,6 +278,12 @@ class ActivityStatus(object):
                    result=None,
                    choices=['foo', 'bar'],
                    done=False)
+
+    The output variable is what will be sent to the user.
+    Result is the result sent through the stack to another activity;
+    for example, if one activity starts an AskYesOrNoActivity, then
+    the AskYesOrNoActivity will send "yes" or "no" as the result.
+
     >>> print(act_s)
     some output
     Choices: foo, bar

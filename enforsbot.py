@@ -185,7 +185,6 @@ class EnforsBot(object):
             protocol = "Twitter"
         user = self.user_handler.find_user_by_identifier(protocol,
                                                          user_name)
-        print(user)
         response = ""
         choices = []
 
@@ -208,20 +207,17 @@ class EnforsBot(object):
         # If we don't have a name for the user, then insert
         # a question about the user's name.
 
-        # Check of new unknown user
+        # Check if new unknown user
         # =========================
         if user.name is None and not user.current_activity():
-            print("This is an unknown user.")
             self.start_ask_user_name(user, text)
 
         # If no ongoing activity
         # ======================
         if not user.current_activity():
-            print("No ongoing activity.")
 
             # Check patterns
             # ==============
-            print("Checking patterns.")
             for pattern, pattern_response in self.responses.items():
                 pat = re.compile(pattern)
 
@@ -234,15 +230,11 @@ class EnforsBot(object):
             # If no pattern match found, check commands
             # =========================================
             if response == "":
-                print("Still no response, parsing command.")
                 response, choices = self.cmd_parser.parse(text, user)
-                print("  response:", response)
-                print("  choices:", choices)
 
         # Handle any ongoing activities
         # =============================
         if user.current_activity():
-            print("User's activities:", user.activities)
             repeat = True
             while repeat:
                 status = self.handle_activity(user, text)
@@ -255,7 +247,6 @@ class EnforsBot(object):
         # Admit defeat
         # ============
         if response == "":
-            print("I don't understand the input.")
             response = "I have no clue what you're talking about."
 
         # Send response

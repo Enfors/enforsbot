@@ -33,5 +33,8 @@ class ShutdownActivity(eb_activity.StateActivity):
     def awaiting_confirmation(self, text):
         "Activity is waiting for yes or no from user."
 
-        return eb_activity.ActivityStatus(output="%s it is!" % text,
+        if text == "yes":
+            raise SystemExit
+
+        return eb_activity.ActivityStatus("Shutdown cancelled.",
                                           done=True)
