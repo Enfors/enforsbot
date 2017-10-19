@@ -1,9 +1,9 @@
 """activity for receiving multiline input from the user."""
 
-from eb_activity import *
+import eb_activity as act
 
 
-class NoteActivity(StateActivity):
+class NoteActivity(act.StateActivity):
     """The activity will read line after line, until it gets a line that says
     "done" and nothing else.
 
@@ -31,33 +31,37 @@ class NoteActivity(StateActivity):
     def start(self, user):
         self.state = self.awaiting_line
 
-        return ActivityStatus(output='Please enter note. Enter "done" '
-                              'on a line of its own when done.')
+        return act.ActivityStatus(output='Please enter note. Enter "done" '
+                                  'on a line of its own when done.')
 
     def awaiting_line(self, text):
         """Add some text to the note. If text == "done", then stop."""
 
         if text == "done":
 
+            print("Note ---------------")
+            for line in self.note.split("\n"):
+                print(">", line)
+            print("--------------------")
+
             if self.require_name:
                 self.state = self.awaiting_name
-                name_act = AskStringActivity(self.user,
-                                             prompt="Please enter a name "
-                                             "for this note:")
+                name_act = act.AskStringActivity(self.user,
+                                                 prompt="Please enter a name "
+                                                 "for this note:")
                 return name_act.start()
-            
-            return ActivityStatus(output="Note received.",
-                                  result=self.note.strip(),
-                                  done=True)
+            return act.ActivityStatus(output="Note received.",
+                                      result=self.note.strip(),
+                                      done=True)
         else:
             self.note += text + "\n"
-            return ActivityStatus(output="Line received.")
+            return act.ActivityStatus(output="Line received.")
 
     def awaiting_name(self, text):
         """Wait for a name for the note."""
 
         name = text
-        
-        return ActivityStatus(output="Name {} received.".format(name),
-                              result=name + "\n" + self.note.strip(),
-                              done=True)
+
+        return act.ActivityStatus(output="Name {} received.".format(name),
+                                  result=name + "\n" + self.note.strip(),
+                                  done=True)
