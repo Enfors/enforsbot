@@ -1,10 +1,16 @@
 # eb_irc.py by Christer Enfors
 
-import time, re, sqlite3, datetime
-import eb_thread, eb_message
+import datetime
+import re
+import sqlite3
+
+import eb_message
+import eb_thread
+
 import botymcbotface.irc as irc
 
 prev_msg_text = ""
+
 
 class IRCThread(eb_thread.Thread, irc.IRCBot):
 
@@ -16,14 +22,13 @@ class IRCThread(eb_thread.Thread, irc.IRCBot):
         self.password = self.config.read_private("irc_password")
 
         irc.IRCBot.__init__(self, self.nickname, self.password,
-                            debug_level = 0)
+                            debug_level=0)
 
-        
     def run(self):
         super().run()
-        
+
         self.db = sqlite3.connect("enforsbot.db",
-                                  detect_types = sqlite3.PARSE_DECLTYPES)
+                                  detect_types=sqlite3.PARSE_DECLTYPES)
 
         self.connect("irc.freenode.net", "#Enfors")
         self.join_channel("#Enfors")
@@ -31,16 +36,15 @@ class IRCThread(eb_thread.Thread, irc.IRCBot):
         message = eb_message.Message("IRC",
                                      eb_message.MSG_TYPE_THREAD_STARTED)
         self.config.send_message("Main", message)
-        
+
         self.main_loop()
 
-
     def main_loop(self):
-
+        "Main loop of the IRC thread."
         while True:
 
             # Check for messages from the main thread.
-            message = self.config.recv_message("IRC", wait = False)
+            message = self.config.recv_message("IRC", wait=False)
 
             if message:
                 if (message.msg_type == eb_message.MSG_TYPE_STOP_THREAD):
@@ -66,12 +70,11 @@ class IRCThread(eb_thread.Thread, irc.IRCBot):
             return None
         message = eb_message.Message("IRC",
                                      eb_message.MSG_TYPE_USER_MESSAGE,
-                                     { "user"     : msg.sender,
-                                       "msg_type" : msg.msg_type,
-                                       "channel"  : msg.channel,
-                                       "text"     : msg.msg_text })
+                                     {"user": msg.sender,
+                                      "msg_type": msg.msg_type,
+                                      "channel": msg.channel,
+                                      "text": msg.msg_text})
         self.config.send_message("Main", message)
-
             
     def on_channel_msg(self, msg):
         self.debug_print("on_channel_msg() called.", 2)
@@ -100,26 +103,24 @@ class IRCThread(eb_thread.Thread, irc.IRCBot):
 
         self.debug_print("Transformed sender: '%s'" %
                          msg.sender.replace("@", "").lower(), 3)
-        if msg.sender.replace("@", "").lower() in [ "enfors",
-                                                    "botymcbotface",
-                                                    "botymctest",
-                                                    "enforsbot",
-                                                    "enforstestbot"]:
+        if msg.sender.replace("@", "").lower() in ["enfors",
+                                                   "botymcbotface",
+                                                   "botymctest",
+                                                   "enforsbot",
+                                                   "enforstestbot"]:
             if msg.sender.lower() != self.nickname.lower():
                 self.make_operator(msg.channel, msg.sender)
             return None
             
         message = eb_message.Message("IRC",
                                      eb_message.MSG_TYPE_NOTIFY_USER,
-                                     { "user": "enfors",
-                                       "text": "We have a visitor in " \
-                                       "#BotyMcBotface: %s." % msg.sender})
+                                     {"user": "enfors",
+                                      "text": "We have a visitor in "
+                                      "#BotyMcBotface: %s." % msg.sender})
         self.config.send_message("Main", message)
 
-
-
     def log_irc_msg(self, msg):
-
+        "Log messages into the database."
         with self.config.lock, self.db:
 
             cur = self.db.cursor()

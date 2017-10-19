@@ -11,4 +11,4 @@ class Cmd(eb_user_cmd.UserCmd):
 
     def rule_ping(self, user, args):
         print("Command ping called.")
-        return "Pong."
+        return "Pong.", []

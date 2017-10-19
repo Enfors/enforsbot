@@ -6,6 +6,7 @@ from __future__ import print_function
 
 import datetime
 
+
 class User(object):
     "Keep track of the same human across multiple protocols."
 
@@ -87,7 +88,7 @@ class User(object):
             cur = self.database.cursor()
 
             cur.execute("insert or replace into USER "
-                        "(USER_ID, NAME, TWITTER_ID, TELEGRAM_ID, IRC_ID, " \
+                        "(USER_ID, NAME, TWITTER_ID, TELEGRAM_ID, IRC_ID, "
                         "CREATED) values "
                         "((select USER_ID from USER where NAME = '?'), "
                         "?, ?, ?, ?, ?);",
@@ -98,7 +99,7 @@ class User(object):
                          datetime.datetime.now()))
 
             # The user is saved. Now, find it's user_id number.
-            cur.execute("select USER_ID from USER " \
+            cur.execute("select USER_ID from USER "
                         "where NAME=?", (self.name,))
             self.user_id = cur.fetchone()
 
@@ -148,9 +149,10 @@ class User(object):
             return val[0]
 
     def __repr__(self):
-        output = "User: %s[%s]" % (self.name, str(self.user_id))
-        #output += "\n- Protocols:" % self.name
-        #for protocol in self.protocols.keys():
+        output = 'User(config, database, name="%s", userid=%s)' % \
+            (self.name, str(self.user_id))
+        # output += "\n- Protocols:" % self.name
+        # for protocol in self.protocols.keys():
         #    output += "\n  - %s:%s" % (protocol, self.protocols[protocol])
 
         return output
@@ -171,8 +173,8 @@ class UserHandler(object):
         indra = User(self.config, self.database, None, "Indra",
                      protocols={"Twitter": "IndraEnfors"})
 
-        self.users = []
-        #self.users = [christer, indra]
+        # self.users = []
+        self.users = [christer, indra]
 
     def find_user_by_identifier(self, protocol, identifier):
         "Given a protocol and identifier, find and return a user."
@@ -210,7 +212,7 @@ class UserHandler(object):
             cur.execute(query, (identifier,))
 
             try:
-                (user_id, name, password, twitter_id, telegram_id, \
+                (user_id, name, password, twitter_id, telegram_id,
                  irc_id) = cur.fetchone()
                 user = User(self.config, self.database, user_id, name,
                             password,
@@ -250,6 +252,3 @@ class UserHandler(object):
 
         print("Looking for Indra:")
         print(self.find_user_by_identifier("Twitter", "IndraEnfors"))
-
-
-

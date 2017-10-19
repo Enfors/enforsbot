@@ -22,7 +22,7 @@ class CmdsLoader():
 
     >>> loader.load_cmds(["user"])
     >>> len(loader)
-    2
+    3
 
     Also, you can load commands directly upon instanciation, by specifying
     in which directories to look for commands:

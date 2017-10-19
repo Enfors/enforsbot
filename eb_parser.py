@@ -1,38 +1,54 @@
 """eb_parser.py - parse commands from users, by Christer Enfors (c) 2017.
 Based on my parser for DannilMUD."""
 
-import os
 
-import eb_update
+class ParserError(BaseException):
+    "Generic parser error."
+    pass
 
-class ParseError(BaseException):
+
+class ParseError(ParserError):
     "A parse error exception."
     pass
 
-class ParseWrongRule(BaseException):
+
+class ParseWrongRule(ParserError):
     pass
 
-class IncorrectInput(BaseException):
+
+class IncorrectInput(ParserError):
     pass
+
+
+class CmdFailed(ParserError):
+    pass
+
+
+class UnknownCmd(ParserError):
+    pass
+
 
 class CmdParser(object):
     "Command parser object."
     def __init__(self, cmds_loader):
         self.cmds_loader = cmds_loader
 
-
     def parse(self, orig_input, user):
         "Parse input from a user."
-        match_found = False
+
         orig_input = orig_input.split()
         cmd_name = orig_input[0]
         fail_explanation = "then it went downhill from there."
 
-        cmd = self.cmds_loader.find_cmd(cmd_name, ["user"])
+        cmd_dirs = ["user"]
+        if user.name == "Christer" or user.name == "Enfors":
+            cmd_dirs.append("admin")
+
+        cmd = self.cmds_loader.find_cmd(cmd_name, cmd_dirs)
 
         try:
             if not cmd:
-                raise ParseError("I have no idea what \"%s\" means." %
+                raise UnknownCmd("I have no idea what \"%s\" means." %
                                  cmd_name)
 
             print("parser: cmd_name='%s'" % cmd_name)
@@ -51,20 +67,25 @@ class CmdParser(object):
                     func_name = "cmd.rule_%s(user, args)" % \
                                 "_".join(orig_rule)
                     try:
-                        return eval(func_name)
+                        parse_retval = eval(func_name)
+                        if isinstance(parse_retval, str):
+                            return parse_retval, []
+                        else:
+                            return parse_retval
+
                     except CmdFailed as e:
-                        return str(e)
+                        return str(e), []
                 except ParseWrongRule:
                     continue
                 except IncorrectInput as e:
                     fail_explanation = str(e)
             raise ParseError("I understood \"%s\", but %s" %
                              (cmd_name, fail_explanation))
-        except ParseError as e:
-            return str(e)
+        except ParserError as e:
+            return str(e), []
 
     def match_input_to_rule(self, inp, rule, user):
-        args = [ ]
+        args = []
 
         while len(rule):
             print("+-Checking token %s..." % rule[0])
@@ -104,8 +125,8 @@ class CmdParser(object):
 
     def pop_first(self, entries):
         if len(entries) == 0:
-            return None, [ ]
+            return None, []
         elif len(entries) == 1:
-            return entries[0], [ ]
+            return entries[0], []
         else:
             return entries[0], entries[1:]
