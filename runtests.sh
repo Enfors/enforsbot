@@ -1,6 +1,6 @@
 #!/bin/sh
 
-files_with_tests="eb_activity.py eb_cmds_loader.py"
+files_with_tests="eb_activity.py eb_cmds_loader.py eb_activities/eb_note.py"
 
 for file in $files_with_tests; do
     echo "Checking $file..."
