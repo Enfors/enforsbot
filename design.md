@@ -61,6 +61,11 @@ An early version could simply save to a file. It should probably save
 in Markdown format. Perhaps each sentence / line should be its own
 paragraph, perhaps not.
 
+It would probably be best if the log saved to a database. Then it
+would be fairly simple to have a function for going through the
+database, and exporting it to an Markdown file, with separate
+headlines for years, months, days, and times.
+
 ### Notes
 
     -> note
