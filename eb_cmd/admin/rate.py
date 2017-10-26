@@ -8,7 +8,7 @@ from sqlalchemy.ext.declarative import declarative_base
 import eb_activity
 import eb_cmd.admin.eb_admin_cmd as eb_admin_cmd
 
-from twitgrep.twitsent import TweetPart
+from twitgrep.twitsent import TweetPart, TwitSent
 
 Base = declarative_base()
 
@@ -48,8 +48,14 @@ class RateActivity(eb_activity.StateActivity):
 
     def start(self, text):
         self.state = self.rating
+        self.num_rated = 0
+        
         self.load_unrated_tweet_part()
 
+        self.model = TwitSent().make_model(search_term="#svpol", min_n=1, max_n=3)
+
+        print("self.model: %d" % (len(self.model.matrix[1])))
+        
         self.tweet_part = self.load_unrated_tweet_part()
 
         if self.tweet_part is None:
@@ -67,7 +73,10 @@ class RateActivity(eb_activity.StateActivity):
         """
 
         if text == "done":
-            return eb_activity.ActivityStatus("Done rating.",
+            unrated = self.s.query(TweetPart).filter(TweetPart.target == None).count()
+            return eb_activity.ActivityStatus("You rated %d tweets, and %d unrated "
+                                              "tweets remain." % (self.num_rated,
+                                                                  unrated),
                                               done=True)
 
         if text == "delete":
@@ -78,8 +87,10 @@ class RateActivity(eb_activity.StateActivity):
             text = text.replace("zero", "0")
             rate_value = int(text)
 
+            self.model.set_sentence_value(self.tweet_part.post_text, rate_value)
             self.tweet_part.target = rate_value
             self.s.commit()
+            self.num_rated = self.num_rated + 1
 
         self.tweet_part = self.load_unrated_tweet_part()
 
@@ -96,8 +107,11 @@ class RateActivity(eb_activity.StateActivity):
         """Set the prompt based on the current tweet.
         """
 
+        estimation = self.model.get_sentence_value(self.tweet_part.post_text)
+        
         self.prompt = "Tweet part from %s:\n%s" % (self.tweet_part.user,
                                                    self.tweet_part.post_text)
+        self.prompt += "\n\nMy estimation: %.2f" % estimation
 
     def load_unrated_tweet_part(self):
         """Load an unrated tweet part from the database, and store it
