@@ -1,8 +1,18 @@
 """Rate tweets for sentiment analysis.
 """
 
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import Column, DateTime, String, Integer, func
+from sqlalchemy.ext.declarative import declarative_base
+
 import eb_activity
 import eb_cmd.admin.eb_admin_cmd as eb_admin_cmd
+from twitgrep import text
+from twitgrep import bag_of_words
+from twitgrep.twitsent import TweetPart
+
+Base = declarative_base()
 
 
 class Cmd(eb_admin_cmd.AdminCmd):
@@ -29,13 +39,27 @@ class RateActivity(eb_activity.StateActivity):
             ["+10", "+8", "+6", "+5", "+4", "+3"],
             ["+2", "+1", "Zero", "-1", "-2"],
             ["-3", "-4", "-5", "-6", "-8", "-10"],
-            ["Done"],
+            ["Delete", "Done"],
             ]
+
+        self.engine = create_engine("sqlite:///../twitgrep/tweets.sqlite")
+        self.session = sessionmaker()
+        self.session.configure(bind=self.engine)
+        self.s = self.session()
 
     def start(self, text):
         self.state = self.rating
-        self.prompt = "Please rate the sentiment of this tweet " \
-                      "(not implemented):"
+        self.load_unrated_tweet_part()
+
+        self.tweet_part = self.load_unrated_tweet_part()
+
+        if self.tweet_part is None:
+            return eb_activity.ActivityStatus(output="There are no new "
+                                              "tweets to rate at this time. ",
+                                              done=True)
+
+        self.prompt = "Please rate the sentiment of this tweet:\n" + \
+                      self.tweet_part.post_text
 
         return eb_activity.ActivityStatus(output=self.prompt,
                                           choices=self.choices)
@@ -48,5 +72,33 @@ class RateActivity(eb_activity.StateActivity):
             return eb_activity.ActivityStatus("Done rating.",
                                               done=True)
 
+        if text == "delete":
+            self.s.delete(self.tweet_part)
+            self.s.commit()
+        else:
+            text = text.replace("+", "")
+            text = text.replace("zero", "0")
+            rate_value = int(text)
+
+            self.tweet_part.target = rate_value
+            self.s.commit()
+
+        self.tweet_part = self.load_unrated_tweet_part()
+
+        if not self.tweet_part:
+            return eb_activity.ActivityStatus(output="No more tweets to rate.",
+                                              done=True)
+
+        self.prompt = "Please rate the sentiment of this tweet:\n" + \
+                      self.tweet_part.post_text
         return eb_activity.ActivityStatus(output=self.prompt,
                                           choices=self.choices)
+
+    def load_unrated_tweet_part(self):
+        """Load an unrated tweet part from the database, and store it
+        in self.
+        """
+
+        tweet_part = self.s.query(TweetPart).filter(TweetPart.target == None).first()
+
+        return tweet_part
