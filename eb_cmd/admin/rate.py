@@ -3,13 +3,11 @@
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import Column, DateTime, String, Integer, func
 from sqlalchemy.ext.declarative import declarative_base
 
 import eb_activity
 import eb_cmd.admin.eb_admin_cmd as eb_admin_cmd
-from twitgrep import text
-from twitgrep import bag_of_words
+
 from twitgrep.twitsent import TweetPart
 
 Base = declarative_base()
@@ -42,7 +40,8 @@ class RateActivity(eb_activity.StateActivity):
             ["Delete", "Done"],
             ]
 
-        self.engine = create_engine("sqlite:///../twitgrep/tweets.sqlite")
+        self.engine = create_engine("sqlite:////home/enfors/devel/" +
+                                    "python/TwitGrep/twitgrep/tweets.sqlite")
         self.session = sessionmaker()
         self.session.configure(bind=self.engine)
         self.s = self.session()
@@ -58,8 +57,7 @@ class RateActivity(eb_activity.StateActivity):
                                               "tweets to rate at this time. ",
                                               done=True)
 
-        self.prompt = "Please rate the sentiment of this tweet:\n" + \
-                      self.tweet_part.post_text
+        self.update_prompt()
 
         return eb_activity.ActivityStatus(output=self.prompt,
                                           choices=self.choices)
@@ -89,10 +87,17 @@ class RateActivity(eb_activity.StateActivity):
             return eb_activity.ActivityStatus(output="No more tweets to rate.",
                                               done=True)
 
-        self.prompt = "Please rate the sentiment of this tweet:\n" + \
-                      self.tweet_part.post_text
+        self.update_prompt()
+
         return eb_activity.ActivityStatus(output=self.prompt,
                                           choices=self.choices)
+
+    def update_prompt(self):
+        """Set the prompt based on the current tweet.
+        """
+
+        self.prompt = "Tweet part from %s:\n%s" % (self.tweet_part.user,
+                                                   self.tweet_part.post_text)
 
     def load_unrated_tweet_part(self):
         """Load an unrated tweet part from the database, and store it
