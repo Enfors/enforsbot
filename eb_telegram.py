@@ -28,7 +28,12 @@ class TelegramThread(eb_thread.Thread):
         with self.config.lock:
             self.bot = telepot.Bot(TOKEN)
 
-        self.bot.message_loop(self.handle_message)
+        try:
+            self.bot.message_loop(self.handle_message)
+        except:
+            print("ERROR in telegram thread: bot.message_loop()")
+            self.config.set_thread_state("Telegram", "exception")
+            raise
 
         message = eb_message.Message("Telegram",
                                      eb_message.MSG_TYPE_THREAD_STARTED)
