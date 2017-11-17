@@ -30,7 +30,7 @@ class IRCThread(eb_thread.Thread, irc.IRCBot):
         self.db = sqlite3.connect("enforsbot.db",
                                   detect_types=sqlite3.PARSE_DECLTYPES)
 
-        self.connect("irc.freenode.net", "#Enfors")
+        self.connect("chat.freenode.net", "#Enfors")
         self.join_channel("#Enfors")
 
         message = eb_message.Message("IRC",
