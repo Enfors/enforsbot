@@ -1,6 +1,6 @@
-# EnforsBot - a Twitter / Telegram bot
+# EnforsBot - a Twitter / Telegram chatbot
 
-EnforsBot is a small bot I run on my Raspberry Pi. It doesn't have
+EnforsBot is a small chatbot I run on my Raspberry Pi. It doesn't have
 that many features, but it does some things that are useful to me:
 
 - It allows me to ask it questions via Twitter or Telegram.
